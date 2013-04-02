@@ -1,0 +1,45 @@
+#progress_bar {
+    margin: 10px 0;
+    padding: 3px;
+    border: 1px solid #000;
+    font-size: 14px;
+    clear: both;
+    opacity: 0;
+    moz-transition: opacity 1s linear;
+    o-transition: opacity 1s linear;
+    webkit-transition: opacity 1s linear;
+    width:900px;
+}
+#progress_bar.loading {
+    opacity: 1.0;
+}
+#progress_bar .percent {
+    background-color: #99ccff;
+    height: auto;
+    width: 0;
+}
+
+#slider {
+    width: 550px;
+}
+
+#button_bar {
+    display: none;
+}
+
+/* SVG Objects*/
+
+svg .circle {
+  fill: steelblue;
+  stroke: white;
+  stroke-width: 2;
+} }
+
+svg .link_line {
+  stroke: rgba(255,255,255,.5);
+  stroke-width: 1.5;
+}
+
+svg .labels {
+    font-size: 10px;
+}

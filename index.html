@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <!--Libraries-->
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.1/themes/base/jquery-ui.css" />
+    <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+    <script src="http://code.jquery.com/ui/1.10.1/jquery-ui.js"></script>
+
+    <!--Visualizer-->
+    <script type="text/javascript" src="visualizer.js"> </script>
+
+    <!--Styles-->
+    <link rel="stylesheet" href="file_input.css">
+</head>
+<body>
+    <div>Input the .json file </div>
+    <input type="file" id="files" name="file" />
+    <button onclick="abortRead();">Cancel read</button>
+    <div id="progress_bar"><div class="percent">0%</div></div>
+
+
+
+    <div id="viz"></div>
+    <div id="slider"></div>
+    <div id="button_bar">
+      <button type="button" onclick="play()"> Play </button>
+      <button type="button" onclick="stop()"> Stop </button>
+    </div>
+    <!--file loading-->
+    <script type="text/javascript" src="file_input.js"> </script>
+
+</body>
+</html>
