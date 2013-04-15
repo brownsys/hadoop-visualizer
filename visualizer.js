@@ -1,6 +1,9 @@
 var flow_map = [];
 var SVG = null;
+var play_timer = 0;
 var svgSize = {x : 600, y : 600};
+var play_ts = {"min": 0};
+var play_servers = null;
 
 function circleCoords(radius, steps, centerX, centerY) {
     var xValues = [centerX];
@@ -82,11 +85,8 @@ function createServers(coords, rad, servers) {
             dataset.push(server);
         }
     }
-    console.log(dataset);
 
     $.each(coords, function(i, d) {
-        console.log(dataset[i]);
-
         g_circles.append("circle")
             .attr('filter', 'url(#dropShadow)')
             .attr("class","circle")
@@ -214,6 +214,10 @@ function processFile(text){
     var servers = getServers(flows);
     var time_stats = generateTimeStats(flows);
 
+    //FIX: This could be the worst thing I have ever done
+    play_ts = time_stats;
+    play_servers = servers;
+
     flow_map = buildFlowMap(flows, time_stats);
     //console.log(flow_map);
 
@@ -325,7 +329,8 @@ function setup(servers, flows, time_stats, flow_map) {
 
     servers = createServers(newSL, serverRadius, servers);
 
-    drawFlows(0, servers);
+    //var curFlows = currentFlows(0, time_stats);
+    //drawFlows(curFlows, servers);
 
     // Create the SVG objects
     //updateServers(serverLayout, serverRadius, servers);
@@ -348,51 +353,74 @@ function createDefs(defs) {
         .attr('in', "SourceGraphic");
 }
 
-function renderFlows(value, ts) {
-    var currentFlows = [];
+
+/* currentFlows time_stats -> currentFlows */
+function currentFlows(value,ts) {
+    var curFlows = [];
 
     /* Find the flows that are currently active */
     for (var i = 0; i < flow_map.length; i++) {
         if ((value + ts["min"]) < flow_map[i].end && (value + ts["min"]) >= flow_map[i].start) {
-            currentFlows.push(flow_map[i]);
+            curFlows.push(flow_map[i]);
         }
     }
-
-    /*TODO : Actually draw the flows*/
-
+    return curFlows;
 }
-
 
 /* FIX: Pick up here, Also, use the fucking change map*/
-function drawFlows(value, servers) {
-    var flows = flow_map[value];
-    console.log(flows);
-    debugger;
-    //for (var i = 0; i < flows.length; i++) {
-        var src = servers[flows.src];
-        var dst = servers[flows.dst];
+function drawFlows(curFlows, servers) {
+    // Remove the previous flows
 
-        /*var lines = SVG.selectAll("svg:line");
-        for(var j = 0; j < lines.length; j++) {
-            var line = lines[j];
-            var parent = line.parentNode();
-            parent.removeChild(line);
-        }
-         */
-        SVG.append("svg:line")
-            .attr("x1", parseInt(src.attributes.cx.nodeValue))
-            .attr("y1", parseInt(src.attributes.cy.nodeValue))
-            .attr("x2", parseInt(dst.attributes.cx.nodeValue))
-            .attr("y2", parseInt(dst.attributes.cy.nodeValue))
-            .style("stroke", "rgb(200, 200, 200)");
-        debugger;
-    //}
+    var lines = d3.selectAll("path");
+
+    if (lines[0].length > 0) {
+        lines.data([]).exit().remove();
+    }
+
+    for (var i = 0; i < curFlows.length; i++) {
+        var src = servers[curFlows[i].src];
+        var dst = servers[curFlows[i].dst];
+
+        var lineData = [{'x': parseInt(src.attributes.cx.nodeValue), //Src
+                         'y': parseInt(src.attributes.cy.nodeValue)},
+                        {'x': svgSize.x/2, // Center
+                         'y': svgSize.y/2},
+                        {'x': parseInt(dst.attributes.cx.nodeValue), // Dst
+                         'y': parseInt(dst.attributes.cy.nodeValue)}];
+
+        var lineFunction = d3.svg.line()
+                .x(function(d) { return d.x; })
+                .y(function(d) { return d.y; })
+                .interpolate("basis");
+
+        SVG.append("path")
+            .attr("d", lineFunction(lineData))
+            .attr("stroke", "blue")
+            .attr("stroke-width", 4)
+            .attr("fill", "none");
+    }
 
 }
 
-function play() {
+function setup_play() {
+    var max = $("#slider").slider("option", "max");
+    play_timer = setInterval(function(){ play(max);}, 10);
+}
+
+function abort_play() {
+    clearInterval(play_timer);
+}
+
+function play(end_time) {
     var value = $("#slider").slider("option", "value");
-    drawFlow(value);
+    if (value < end_time) {
+        $("#slider").slider("value", (value+1));
+    } else {
+        console.log("Clearing interval");
+        clearInterval(play_timer);
+    }
+    var curFlows = currentFlows(value, play_ts);
+    drawFlows(curFlows, play_servers);
 }
 
 function setupSlider(SVG, ts, servers) {
@@ -404,7 +432,8 @@ function setupSlider(SVG, ts, servers) {
             max: ts["max"] - ts["min"],
             value: 1,
             slide: function( event, ui ) {
-                renderFlows(ui.value, ts);
+                var curFlows = currentFlows(ui.value, ts);
+                drawFlows(curFlows, servers);
             }
         });
     });
