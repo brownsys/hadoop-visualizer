@@ -75,6 +75,7 @@ function updateServers(coords, rad, servers) {
 
 function createServers(coords, rad, servers) {
     var numCircles = 10;
+
     var g_circles = SVG.append("g")
             .attr("class","circles");
 
@@ -340,6 +341,18 @@ function setup(servers, flows, time_stats, flow_map) {
     var serverRadius = 35;
 
 
+    /*Add the text with the time*/
+    SVG.append("text")
+        .attr("x", function(d){return svgSize.x - 150;})
+        .attr("y", function(d){return svgSize.y - 25;})
+        .text("Time:");
+    SVG.append("text")
+        .attr("class","time_val")
+        .attr("x", function(d){return svgSize.x - 140;})
+        .attr("y", function(d){return svgSize.y - 10;})
+        .text("0");
+
+
     // Calculate the locations of the servers
     var serverLayout = circleCoords(serverCircleRadius, numServers,
                                     svgSize.x/2, svgSize.y/2);
@@ -395,8 +408,8 @@ function currentFlows(value,ts) {
 
 /* FIX: Pick up here, Also, use the fucking change map*/
 function drawFlows(curFlows, servers) {
-    // Remove the previous flows
 
+    // Remove the previous flows
     var lines = d3.selectAll("path");
 
     if (lines[0].length > 0) {
@@ -447,11 +460,15 @@ function abort_play() {
 
 function play(end_time) {
     var value = $("#slider").slider("option", "value");
+
+
     if (value < end_time) {
         $("#slider").slider("value", (value+1));
+        d3.selectAll("text.time_val").text(value+1);
     } else {
         console.log("Clearing interval");
         clearInterval(play_timer);
+        play_timer=0;
     }
     var curFlows = currentFlows(value, play_ts);
     drawFlows(curFlows, play_servers);
@@ -466,6 +483,8 @@ function setupSlider(SVG, ts, servers) {
             max: ts["max"] - ts["min"],
             value: 1,
             slide: function( event, ui ) {
+                d3.selectAll("text.time_val").text(ui.value+1);
+
                 var curFlows = currentFlows(ui.value, ts);
                 drawFlows(curFlows, servers);
             }
