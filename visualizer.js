@@ -4,6 +4,7 @@ var play_timer = 0;
 var svgSize = {x : 600, y : 600};
 var play_ts = {"min": 0};
 var play_servers = null;
+var play_weight = {"min": 9007199254740992, "max": -1};
 
 function circleCoords(radius, steps, centerX, centerY) {
     var xValues = [centerX];
@@ -144,10 +145,18 @@ function buildFlowMap(flows, time_stats) {
 
                 /*Get the endTime*/
                 var tstat = flows[flow]["tstat"];
-                if (tstat.length <= 1) {
+                if (tstat.length <= 2) {
                     // 88th entry is the length of the request
                     var flow_len = parseInt(tstat[0][88]);
                     entry.end = entry.start + flow_len;
+
+                    //8th entry for the size of the flow
+                    var bytesTransfered = parseInt(tstat[0][8]);
+                    var weight = bytesTransfered/flow_len;
+                    var line_weight = (((15 - 3)*(weight - play_weight.min))/
+                        (play_weight.max -  play_weight.min)) + 3;
+
+                    entry.weight = line_weight;
                 }
                 map.push(entry);
             }
@@ -175,7 +184,7 @@ function buildChangeMap() {
 
                 /*Get the endTime*/
                 var tstat = flows[flow]["tstat"];
-                if (tstat.length <= 1) {
+                if (tstat.length <= 2) {
                     // 88th entry is the length of the request
                     var flow_len = parseInt(tstat[0][88]);
                     entry.end = entry.start + flow_len;
@@ -235,7 +244,7 @@ function processFile(text){
  * minimum times of the traces. This should be put in sync with get
  *  servers, but I will worry about that later
  */
-
+// TODO CHANGE NAME AND RETURN WEIGHT
 function generateTimeStats(input) {
     var ret = {"min" : 1000000000000000, "max" : 0};
     for (var flow in input) {
@@ -254,14 +263,30 @@ function generateTimeStats(input) {
 
             /* Checking to make sure there is the tstat field/ getting
              * max */
+
+
             var tstat = input[flow]["tstat"];
-            if (tstat.length <= 1) {
+            if (tstat.length <= 2) {
 
                 // 88th entry is the length of the request
                 var flow_len = parseInt(tstat[0][88]);
                 if ((timestamp + flow_len) > ret["max"]) {
                     ret["max"] = (timestamp + flow_len);
                 }
+
+                var bytesTransfered = parseInt(tstat[0][8]);
+                var weight = bytesTransfered/flow_len;
+
+                //8th entry is the size
+
+                if (play_weight.min > weight) {
+
+                    play_weight.min = weight;
+                } else if (play_weight.max < weight) {
+
+                    play_weight.max = weight;
+                }
+
             }
         }
     }
@@ -313,6 +338,7 @@ function setup(servers, flows, time_stats, flow_map) {
     var numServers = servers.size;
     var serverCircleRadius = 250;
     var serverRadius = 35;
+
 
     // Calculate the locations of the servers
     var serverLayout = circleCoords(serverCircleRadius, numServers,
@@ -393,10 +419,11 @@ function drawFlows(curFlows, servers) {
                 .y(function(d) { return d.y; })
                 .interpolate("basis");
 
+        //debugger;
         SVG.append("path")
             .attr("d", lineFunction(lineData))
             .attr("stroke", "blue")
-            .attr("stroke-width", 4)
+            .attr("stroke-width", curFlows[i].weight)
             .attr("fill", "none");
     }
 
@@ -404,11 +431,18 @@ function drawFlows(curFlows, servers) {
 
 function setup_play() {
     var max = $("#slider").slider("option", "max");
-    play_timer = setInterval(function(){ play(max);}, 10);
+    if (play_timer == 0) {
+        console.log(play_timer);
+        play_timer = setInterval(function(){ play(max);}, 10);
+    } else {
+        console.log("Cant setup, it already exists");
+    }
 }
 
 function abort_play() {
+    console.log("Hitting abort");
     clearInterval(play_timer);
+    play_timer = 0;
 }
 
 function play(end_time) {
