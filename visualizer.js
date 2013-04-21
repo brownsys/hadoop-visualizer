@@ -5,6 +5,7 @@ var svgSize = {x : 600, y : 600};
 var play_ts = {"min": 0};
 var play_servers = null;
 var play_weight = {"min": 9007199254740992, "max": -1};
+var simulation_speed = 10;
 
 function circleCoords(radius, steps, centerX, centerY) {
     var xValues = [centerX];
@@ -73,7 +74,7 @@ function updateServers(coords, rad, servers) {
     return servers;
 }
 
-function createServers(coords, rad, servers) {
+function createServers(coords, rad, servers, pathEnd) {
     var numCircles = 10;
 
     var g_circles = SVG.append("g")
@@ -115,7 +116,8 @@ function createServers(coords, rad, servers) {
             .data(dataset);
 
     for (var i = 0; i < circles[0].length; i++) {
-        servers[dataset[i]] = circles[0][i];
+        //servers[dataset[i]].node = circles[0][i];
+        servers[dataset[i]] = pathEnd[i];
     }
 
     return servers;
@@ -228,7 +230,7 @@ function processFile(text){
     play_ts = time_stats;
     play_servers = servers;
 
-    flow_map = buildFlowMap(flows, time_stats);
+
     //console.log(flow_map);
 
 
@@ -236,7 +238,7 @@ function processFile(text){
     //console.log(time_stats);
 
     /* TODO: I shouldn't need the flows in the setup, right?*/
-    setup(servers, flows, time_stats, flow_map);
+    setup(servers, flows, time_stats);
 }
 
 /*
@@ -328,24 +330,26 @@ function getServers(input) {
     return servers;
 }
 
-function setup(servers, flows, time_stats, flow_map) {
+function setup(servers, flows, time_stats) {
 
     // Initialize the canvas
     SVG = d3.select("#viz").append("svg")
             .attr("width", svgSize.x)
             .attr("height", svgSize.y);
 
+    // Build the flow map
+    flow_map = buildFlowMap(flows, time_stats);
+
     // Info About Servers
     var numServers = servers.size;
     var serverCircleRadius = 250;
     var serverRadius = 35;
 
-
     /*Add the text with the time*/
     SVG.append("text")
         .attr("x", function(d){return svgSize.x - 150;})
         .attr("y", function(d){return svgSize.y - 25;})
-        .text("Time:");
+        .text("Time (ms):");
     SVG.append("text")
         .attr("class","time_val")
         .attr("x", function(d){return svgSize.x - 140;})
@@ -357,6 +361,11 @@ function setup(servers, flows, time_stats, flow_map) {
     var serverLayout = circleCoords(serverCircleRadius, numServers,
                                     svgSize.x/2, svgSize.y/2);
 
+    var pathEndpoints = newCircleCoords(serverCircleRadius- serverRadius,
+                                    numServers, svgSize.x/2, svgSize.y/2);
+
+    // We need to add the pathEndpoints to the flow_map
+
 
     // Initialize definitions
     createDefs(SVG.append('svg:defs'));
@@ -366,14 +375,15 @@ function setup(servers, flows, time_stats, flow_map) {
     var newSL = newCircleCoords(serverCircleRadius, numServers,
                                     svgSize.x/2, svgSize.y/2);
 
-    servers = createServers(newSL, serverRadius, servers);
+    servers = createServers(newSL, serverRadius, servers, pathEndpoints);
 
     //var curFlows = currentFlows(0, time_stats);
     //drawFlows(curFlows, servers);
 
     // Create the SVG objects
     //updateServers(serverLayout, serverRadius, servers);
-    setupSlider(SVG, time_stats, servers);
+    setupTimeSlider(SVG, time_stats, servers);
+    setupSpeedSlider();
 }
 
 function createDefs(defs) {
@@ -420,12 +430,12 @@ function drawFlows(curFlows, servers) {
         var src = servers[curFlows[i].src];
         var dst = servers[curFlows[i].dst];
 
-        var lineData = [{'x': parseInt(src.attributes.cx.nodeValue), //Src
-                         'y': parseInt(src.attributes.cy.nodeValue)},
+        var lineData = [{'x': parseInt(src[0]), //Src
+                         'y': parseInt(src[1])},
                         {'x': svgSize.x/2, // Center
                          'y': svgSize.y/2},
-                        {'x': parseInt(dst.attributes.cx.nodeValue), // Dst
-                         'y': parseInt(dst.attributes.cy.nodeValue)}];
+                        {'x': parseInt(dst[0]), // Dst
+                         'y': parseInt(dst[1])}];
 
         var lineFunction = d3.svg.line()
                 .x(function(d) { return d.x; })
@@ -443,27 +453,25 @@ function drawFlows(curFlows, servers) {
 }
 
 function setup_play() {
-    var max = $("#slider").slider("option", "max");
+    var max = $("#time_slider").slider("option", "max");
     if (play_timer == 0) {
         console.log(play_timer);
-        play_timer = setInterval(function(){ play(max);}, 10);
+        play_timer = setInterval(function(){ play(max);}, simulation_speed);
     } else {
         console.log("Cant setup, it already exists");
     }
 }
 
 function abort_play() {
-    console.log("Hitting abort");
     clearInterval(play_timer);
     play_timer = 0;
 }
 
 function play(end_time) {
-    var value = $("#slider").slider("option", "value");
-
+    var value = $("#time_slider").slider("option", "value");
 
     if (value < end_time) {
-        $("#slider").slider("value", (value+1));
+        $("#time_slider").slider("value", (value+1));
         d3.selectAll("text.time_val").text(value+1);
     } else {
         console.log("Clearing interval");
@@ -474,10 +482,36 @@ function play(end_time) {
     drawFlows(curFlows, play_servers);
 }
 
-function setupSlider(SVG, ts, servers) {
+function setupSpeedSlider() {
+    $(function() {
+        $( "#speed_slider" ).slider({
+            range: "max",
+            min: 1,
+            max: 100,
+            value: 100,
+            slide: function( event, ui ) {
+                if (play_timer != 0) {
+                    abort_play();
+                    document.getElementById("speed_slider_value").innerText
+                        = ui.value + " ms";
+
+                    simulation_speed = ui.value;
+                    setup_play();
+                } else {
+                    document.getElementById("speed_slider_value").innerText
+                        = ui.value + " ms";
+                    simulation_speed = ui.value;
+                }
+            }
+        });
+    });
+
+}
+
+function setupTimeSlider(SVG, ts, servers) {
     $(function() {
         $("#button_bar")[0].style.display = "block";
-        $( "#slider" ).slider({
+        $( "#time_slider" ).slider({
             range: "max",
             min: 0,
             max: ts["max"] - ts["min"],

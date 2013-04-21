@@ -19,8 +19,17 @@
     width: 0;
 }
 
-#slider {
+#time_slider {
     width: 550px;
+}
+
+#speed_slider {
+    width: 100px;
+    text-align:center;
+}
+
+#speed_slider_wrapper {
+    padding-top: 10px;
 }
 
 #button_bar {
