@@ -52,3 +52,9 @@ svg .link_line {
 svg .labels {
     font-size: 10px;
 }
+
+#content {
+    max-width : 800px;
+    margin-left: auto ;
+    margin-right: auto ;
+}
