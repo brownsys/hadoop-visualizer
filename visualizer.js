@@ -74,6 +74,7 @@ function updateServers(coords, rad, servers) {
     return servers;
 }
 
+
 function createServers(coords, rad, servers, pathEnd) {
     var numCircles = 10;
 
@@ -81,6 +82,25 @@ function createServers(coords, rad, servers, pathEnd) {
             .attr("class","circles");
 
     var dataset = [];
+    var server_sort = function(a,b) {
+        if ( a == b) {
+            return 0;
+        }
+
+        // Sort the last digit
+        var tmp_a = a.split(".");
+        var tmp_b = b.split(".");
+
+        var int_a = parseInt(tmp_a[tmp_a.length-1]);
+        var int_b = parseInt(tmp_b[tmp_b.length-1]);
+
+        if (int_a > int_b) {
+            return 1;
+        } else {
+            return -1;
+        }
+    };
+
 
     // Create the Dataset
     for (var server in servers) {
@@ -89,6 +109,11 @@ function createServers(coords, rad, servers, pathEnd) {
         }
     }
 
+    // Ensures that the servers are in incremental ordering
+    dataset.sort(server_sort);
+
+
+    debugger;
     $.each(coords, function(i, d) {
         g_circles.append("circle")
             .attr('filter', 'url(#dropShadow)')
@@ -97,8 +122,9 @@ function createServers(coords, rad, servers, pathEnd) {
             .attr("r", 30)
             .attr("cx", d[0])
             .attr("cy", d[1])
-            .text("Heel")
+            .text(dataset[i])
             .data(dataset[i]);
+
 
         /* TODO: I really should put these in a div so that I can
          * center these bitches
@@ -442,14 +468,23 @@ function drawFlows(curFlows, servers) {
                 .y(function(d) { return d.y; })
                 .interpolate("basis");
 
-        //debugger;
+        debugger;
         SVG.append("path")
             .attr("d", lineFunction(lineData))
             .attr("stroke", "blue")
             .attr("stroke-width", curFlows[i].weight)
-            .attr("fill", "none");
+            .attr("fill", "none")
+            .on("mouseover", function() {draw_box(d3.select(this));})
+            .on("mouseover", remove_box);
     }
+}
 
+function remove_box() {
+    console.log("whats up bitches");
+}
+
+function draw_box(s) {
+    console.log(d3.select(s));
 }
 
 function setup_play() {
