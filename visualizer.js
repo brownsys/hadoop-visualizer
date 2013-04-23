@@ -7,6 +7,30 @@ var play_servers = null;
 var play_weight = {"min": 9007199254740992, "max": -1};
 var simulation_speed = 10;
 
+var node_mappings = {"10.200.0.2": "euc-nat",
+"10.200.0.1": "eucboss",
+"10.200.0.3": "euc01",
+"10.200.0.4": "euc02",
+"10.200.0.5": "euc03",
+"10.200.0.6": "euc04",
+"10.200.0.7": "euc05",
+"10.200.0.8": "euc06",
+"10.200.0.9": "euc07",
+"10.200.0.10": "euc08",
+"10.200.0.11": "euc09",
+"10.200.0.12": "euc10",
+"10.200.0.13": "euc11",
+"10.200.0.14": "euc12",
+"10.200.0.15": "euc13",
+"10.200.0.16": "euc14",
+"10.200.0.17": "euc15",
+"10.200.0.18": "euc16",
+"10.200.0.19": "euc17",
+"10.200.0.20": "euc18",
+"10.200.0.21": "euc19",
+"10.200.0.22": "euc20"};
+
+
 function circleCoords(radius, steps, centerX, centerY) {
     var xValues = [centerX];
     var yValues = [centerY];
@@ -112,8 +136,6 @@ function createServers(coords, rad, servers, pathEnd) {
     // Ensures that the servers are in incremental ordering
     dataset.sort(server_sort);
 
-
-    debugger;
     $.each(coords, function(i, d) {
         g_circles.append("circle")
             .attr('filter', 'url(#dropShadow)')
@@ -131,7 +153,7 @@ function createServers(coords, rad, servers, pathEnd) {
          */
 
         SVG.append('text')
-            .text(dataset[i])
+            .text(node_mappings[dataset[i]])
             .attr("class", "labels")
             .attr("x", d[0] - 25)
             .attr("y", d[1] + 3)
@@ -142,12 +164,15 @@ function createServers(coords, rad, servers, pathEnd) {
             .data(dataset);
 
     for (var i = 0; i < circles[0].length; i++) {
-        //servers[dataset[i]].node = circles[0][i];
         servers[dataset[i]] = pathEnd[i];
     }
 
     return servers;
 }
+
+//TODO: Fill in function. It needs to read in the node map, and fill
+//node_map in appropriately.
+function loadNodeMapping(){}
 
 /* buidFlowMap flows -> [flow1, flow2, ..., flowN]
  * This function is where the heavy lifting happens. We scroll through
@@ -260,7 +285,8 @@ function processFile(text){
     //console.log(flow_map);
 
 
-    //console.log(flows);
+    console.log(flows);
+    debugger;
     //console.log(time_stats);
 
     /* TODO: I shouldn't need the flows in the setup, right?*/
@@ -362,6 +388,9 @@ function setup(servers, flows, time_stats) {
     SVG = d3.select("#viz").append("svg")
             .attr("width", svgSize.x)
             .attr("height", svgSize.y);
+
+    debugger;
+    //Get the ip to node mappings. TODO: Make this a file input thing
 
     // Build the flow map
     flow_map = buildFlowMap(flows, time_stats);
