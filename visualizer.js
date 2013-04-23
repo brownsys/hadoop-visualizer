@@ -427,9 +427,21 @@ function drawFlows(curFlows, servers) {
                 .y(function(d) { return d.y; })
                 .interpolate("bundle");
 
+	var color = "blue";
+	if (curFlows[i]["dst_port"] == 8080 || curFlows[i]["src_port"] == 8080) {
+	    // Shuffle
+	    color = "red";
+	} else if (curFlows[i]["dst_port"] == 50010 || curFlows[i]["src_port"] == 50010) {
+	    // DataNode
+	    color = "green";
+	} else if (curFlows[i]["dst_port"] == 9000 || curFlows[i]["src_port"] == 9000) {
+	    // NameNode
+	    color = "orange";
+	}
+
         SVG.append("path")
             .attr("d", lineFunction(lineData))
-            .attr("stroke", "blue")
+            .attr("stroke", color)
             .attr("opacity", .5)
             .attr("stroke-width", curFlows[i].weight)
             .attr("fill", "none")
