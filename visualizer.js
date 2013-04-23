@@ -30,12 +30,9 @@ var node_mappings = {"10.200.0.2": "euc-nat",
 "10.200.0.21": "euc19",
 "10.200.0.22": "euc20"};
 
-
-
 /*
  TODO: Take in node_mappings for ip -> node name
 */
-
 
 function circleCoords(radius, steps, centerX, centerY) {
     var xValues = [centerX];
@@ -150,7 +147,7 @@ function buildFlowMap(flows) {
 
                     //8th entry for the size of the flow
                     var bytesTransfered = parseInt(tstat[0][8]);
-                    var weight = bytesTransfered/flow_len;
+                    var weight = Math.log(bytesTransfered/flow_len);
                     var line_weight = (((15 - 3)*(weight - play_weight.min))/
                         (play_weight.max -  play_weight.min)) + 3;
 
@@ -265,7 +262,7 @@ function generateTimeStats(input) {
                 }
 
                 var bytesTransfered = parseInt(tstat[0][8]);
-                var weight = bytesTransfered/flow_len;
+                var weight = Math.log(bytesTransfered/flow_len);
 
                 //8th entry is the size
 
@@ -280,6 +277,7 @@ function generateTimeStats(input) {
             }
         }
     }
+    debugger;
     return ret;
 }
 
