@@ -317,7 +317,6 @@ function getServers(input) {
 }
 
 function setup(servers, flows, time_stats) {
-
     // Initialize the canvas
     SVG = d3.select("#viz").append("svg")
             .attr("width", svgSize.x)
@@ -418,6 +417,7 @@ function drawFlows(curFlows, servers) {
         SVG.append("path")
             .attr("d", lineFunction(lineData))
             .attr("stroke", "blue")
+            .attr("opacity", .5)
             .attr("stroke-width", curFlows[i].weight)
             .attr("fill", "none")
             .on("mouseover", function() {draw_box(d3.select(this));})
@@ -455,7 +455,6 @@ function play(end_time) {
         $("#time_slider").slider("value", (value+1));
         d3.selectAll("text.time_val").text(value+1);
     } else {
-        console.log("Clearing interval");
         clearInterval(play_timer);
         play_timer=0;
     }
@@ -464,12 +463,14 @@ function play(end_time) {
 }
 
 function setupSpeedSlider() {
+   // TODO: Should I just make the value step bigger?
     $(function() {
         $( "#speed_slider" ).slider({
             range: "max",
-            min: 1,
-            max: 100,
-            value: 100,
+            min: .001,
+            max: 30,
+            step:.001,
+            value: 10,
             slide: function( event, ui ) {
                 if (play_timer != 0) {
                     abort_play();
@@ -486,7 +487,6 @@ function setupSpeedSlider() {
             }
         });
     });
-
 }
 
 function setupTimeSlider(SVG, ts, servers) {
