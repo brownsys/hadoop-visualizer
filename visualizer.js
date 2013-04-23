@@ -31,21 +31,13 @@ var node_mappings = {"10.200.0.2": "euc-nat",
 "10.200.0.22": "euc20"};
 
 
+
+/*
+ TODO: Take in node_mappings for ip -> node name
+*/
+
+
 function circleCoords(radius, steps, centerX, centerY) {
-    var xValues = [centerX];
-    var yValues = [centerY];
-    for (var i = 1; i < steps; i++) {
-        xValues[i] = (centerX + radius * Math.cos(2 * Math.PI * i /
-                                                  steps-Math.PI/2));
-        yValues[i] = (centerY + radius * Math.sin(2 * Math.PI * i /
-                                                  steps-Math.PI/2));
-   }
-    yValues[0] = yValues[0] - radius;
-    return {x : xValues, y : yValues};
-}
-
-
-function newCircleCoords(radius, steps, centerX, centerY) {
     var xValues = [centerX];
     var yValues = [centerY];
     var ret = [[centerX, centerY]];
@@ -61,50 +53,9 @@ function newCircleCoords(radius, steps, centerX, centerY) {
     return ret;
 }
 
-function updateServers(coords, rad, servers) {
-    var xValues = coords.x;
-    var yValues = coords.y;
-    var dataset = [];
-
-    // Create the Dataset
-    for (var server in servers) {
-        if (servers.hasOwnProperty(server) && server != "size") {
-            dataset.push(server);
-        }
-    }
-
-
-    // Create the Fucking circles
-    // http://stackoverflow.com/questions/13615381/d3-add-text-to-circle
-    for (i = 0; i < xValues.length; i++) {
-        SVG.append("circle")
-            .style("stroke", "gray")
-            .style("fill", "white")
-            .attr("r", rad)
-            .attr("cx", xValues[i])
-            .attr("cy", yValues[i])
-            .on("mouseover", function(){d3.select(this).style("fill","aliceblue");})
-            .on("mouseout", function(){d3.select(this).style("fill", "white");});
-    }
-
-    var circles = SVG.selectAll("circle")
-            .data(dataset);
-
-    // TODO: This still isn't that efficient
-    // Return a map of addresses to circles
-    for (var i = 0; i < circles.length; i++) {
-        servers[dataset[i]] = circles[i];
-    }
-    return servers;
-}
-
 
 function createServers(coords, rad, servers, pathEnd) {
     var numCircles = 10;
-
-    var g_circles = SVG.append("g")
-            .attr("class","circles");
-
     var dataset = [];
     var server_sort = function(a,b) {
         if ( a == b) {
@@ -136,6 +87,9 @@ function createServers(coords, rad, servers, pathEnd) {
     // Ensures that the servers are in incremental ordering
     dataset.sort(server_sort);
 
+    var g_circles = SVG.append("g")
+            .attr("class","circles");
+
     $.each(coords, function(i, d) {
         g_circles.append("circle")
             .attr('filter', 'url(#dropShadow)')
@@ -146,11 +100,6 @@ function createServers(coords, rad, servers, pathEnd) {
             .attr("cy", d[1])
             .text(dataset[i])
             .data(dataset[i]);
-
-
-        /* TODO: I really should put these in a div so that I can
-         * center these bitches
-         */
 
         SVG.append('text')
             .text(node_mappings[dataset[i]])
@@ -170,18 +119,13 @@ function createServers(coords, rad, servers, pathEnd) {
     return servers;
 }
 
-//TODO: Fill in function. It needs to read in the node map, and fill
-//node_map in appropriately.
-function loadNodeMapping(){}
 
 /* buidFlowMap flows -> [flow1, flow2, ..., flowN]
  * This function is where the heavy lifting happens. We scroll through
  *  all the flows and build a relevent map of changes in flows over
  *  time.
 */
-/*TODO: time_stats is currently unused. Do I need it?*/
-function buildFlowMap(flows, time_stats) {
-
+function buildFlowMap(flows) {
     var map = [];
     for ( var flow in flows ) {
         if (flows.hasOwnProperty(flow)) {
@@ -222,7 +166,7 @@ function buildFlowMap(flows, time_stats) {
 /* Alternate to flow map. Much faster*/
 function buildChangeMap() {
     var map = {};
-    for ( var flow in flows ) {
+    for ( var flow in flows) {
         if (flows.hasOwnProperty(flow)) {
             var entry = {};
             var tags = flows[flow]["trace-tags"];
@@ -281,14 +225,6 @@ function processFile(text){
     play_ts = time_stats;
     play_servers = servers;
 
-
-    //console.log(flow_map);
-
-
-    console.log(flows);
-    debugger;
-    //console.log(time_stats);
-
     /* TODO: I shouldn't need the flows in the setup, right?*/
     setup(servers, flows, time_stats);
 }
@@ -318,7 +254,6 @@ function generateTimeStats(input) {
 
             /* Checking to make sure there is the tstat field/ getting
              * max */
-
 
             var tstat = input[flow]["tstat"];
             if (tstat.length <= 2) {
@@ -351,8 +286,7 @@ function generateTimeStats(input) {
 /*
  * getServers Input json -> {server1 : 1, server2 : 2 ... }
  * This function gets the servers from all of the flows. It also adds
- *  a size field to the object to get how many servers are used. It is
- * currently not that efficient, but we will leave that as a TODO
+ *  a size field to the object to get how many servers are used.
  */
 function getServers(input) {
     var servers = {"size" : 0};
@@ -389,11 +323,8 @@ function setup(servers, flows, time_stats) {
             .attr("width", svgSize.x)
             .attr("height", svgSize.y);
 
-    debugger;
-    //Get the ip to node mappings. TODO: Make this a file input thing
-
     // Build the flow map
-    flow_map = buildFlowMap(flows, time_stats);
+    flow_map = buildFlowMap(flows);
 
     // Info About Servers
     var numServers = servers.size;
@@ -412,31 +343,17 @@ function setup(servers, flows, time_stats) {
         .text("0");
 
 
-    // Calculate the locations of the servers
-    var serverLayout = circleCoords(serverCircleRadius, numServers,
-                                    svgSize.x/2, svgSize.y/2);
-
-    var pathEndpoints = newCircleCoords(serverCircleRadius- serverRadius,
-                                    numServers, svgSize.x/2, svgSize.y/2);
-
-    // We need to add the pathEndpoints to the flow_map
-
-
     // Initialize definitions
     createDefs(SVG.append('svg:defs'));
 
-
-    // Add classes
-    var newSL = newCircleCoords(serverCircleRadius, numServers,
+    // Create the SVG servers
+    var pathEndpoints = circleCoords(serverCircleRadius- serverRadius,
+                                    numServers, svgSize.x/2, svgSize.y/2);
+    var serverLayout = circleCoords(serverCircleRadius, numServers,
                                     svgSize.x/2, svgSize.y/2);
+    servers = createServers(serverLayout, serverRadius, servers, pathEndpoints);
 
-    servers = createServers(newSL, serverRadius, servers, pathEndpoints);
-
-    //var curFlows = currentFlows(0, time_stats);
-    //drawFlows(curFlows, servers);
-
-    // Create the SVG objects
-    //updateServers(serverLayout, serverRadius, servers);
+    // Setup Sliders
     setupTimeSlider(SVG, time_stats, servers);
     setupSpeedSlider();
 }
@@ -582,7 +499,6 @@ function setupTimeSlider(SVG, ts, servers) {
             value: 1,
             slide: function( event, ui ) {
                 d3.selectAll("text.time_val").text(ui.value+1);
-
                 var curFlows = currentFlows(ui.value, ts);
                 drawFlows(curFlows, servers);
             }
