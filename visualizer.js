@@ -215,8 +215,24 @@ function buildChangeMap() {
  */
 function processFile(text){
     var flows = JSON.parse(text);
+
+    if (SVG != null) {
+        d3.select("#viz")[0][0].innerHTML = "";
+
+        document.getElementById("time_slider").innerHTML = "";
+        document.getElementById("speed_slider").innerHTML = "";
+
+        flow_map = [];
+        play_timer = 0;
+        svgSize = {x : 600, y : 600};
+        play_ts = {"min": 0};
+        play_servers = null;
+        play_weight = {"min": 9007199254740992, "max": -1};
+
+    }
     var servers = getServers(flows);
     var time_stats = generateTimeStats(flows);
+
 
     //FIX: This could be the worst thing I have ever done
     play_ts = time_stats;
@@ -277,7 +293,6 @@ function generateTimeStats(input) {
             }
         }
     }
-    debugger;
     return ret;
 }
 
@@ -315,6 +330,7 @@ function getServers(input) {
 }
 
 function setup(servers, flows, time_stats) {
+
     // Initialize the canvas
     SVG = d3.select("#viz").append("svg")
             .attr("width", svgSize.x)
@@ -411,7 +427,6 @@ function drawFlows(curFlows, servers) {
                 .y(function(d) { return d.y; })
                 .interpolate("basis");
 
-        debugger;
         SVG.append("path")
             .attr("d", lineFunction(lineData))
             .attr("stroke", "blue")
