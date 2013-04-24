@@ -4,7 +4,7 @@ var play_timer = 0;
 var svgSize = {x : 600, y : 600};
 var play_ts = {"min": 0};
 var play_servers = null;
-var play_weight = {"min": 9007199254740992, "max": -1};
+var play_weight = {"min": Infinity, "max": -1};
 var simulation_speed = 10;
 
 var node_mappings = {"10.200.0.2": "euc-nat",
@@ -95,14 +95,17 @@ function createServers(coords, rad, servers, pathEnd) {
             .attr("r", 30)
             .attr("cx", d[0])
             .attr("cy", d[1])
+	    .attr("style", "stroke-width:0")
+	    .attr("opacity", .9)
             .text(dataset[i])
             .data(dataset[i]);
 
         SVG.append('text')
             .text(node_mappings[dataset[i]])
             .attr("class", "labels")
-            .attr("x", d[0] - 25)
-            .attr("y", d[1] + 3)
+            .attr("x", d[0])
+            .attr("y", d[1] + 4)
+	    .attr("text-anchor", "middle")
             .attr('fill', 'black');
     });
 
