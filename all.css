@@ -53,6 +53,17 @@ svg .labels {
     font-size: 15px;
 }
 
+svg ::-moz-selection {  background: transparent; }
+svg ::selection {  background: transparent; }
+
+svg .labels:hover {
+    cursor: default;
+}
+
+svg .all_filters:hover {
+    cursor: pointer;
+}
+
 #content {
     max-width : 800px;
     margin-left: auto ;

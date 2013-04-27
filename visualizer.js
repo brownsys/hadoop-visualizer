@@ -1,11 +1,15 @@
 var flow_map = [];
 var SVG = null;
 var play_timer = 0;
-var svgSize = {x : 600, y : 600};
+var svgSize = {cx : 600, cy : 600, x : 800, y: 600};
 var play_ts = {"min": 0};
 var play_servers = null;
 var play_weight = {"min": 9007199254740992, "max": -1};
 var simulation_speed = 10;
+var flow_types = {"Shuffle" : {"port" : 8080, "color": "blue"},
+                  "DataNode" : {"port" : 50010, "color": "green"},
+                  "NameNode" : {"port" : 9000, "color": "orange"}};
+var cur_filters = {};
 
 var node_mappings = {"10.200.0.2": "euc-nat",
 "10.200.0.1": "eucboss",
@@ -224,7 +228,6 @@ function processFile(text){
 
         flow_map = [];
         play_timer = 0;
-        svgSize = {x : 600, y : 600};
         play_ts = {"min": 0};
         play_servers = null;
         play_weight = {"min": 9007199254740992, "max": -1};
@@ -329,6 +332,85 @@ function getServers(input) {
     return servers;
 }
 
+function drawFilters(){
+    var dat = [];
+    var curY = 40;
+    for (var type in flow_types) {
+        var tmp = {};
+        tmp["name"] = type;
+        tmp["port"] = flow_types[type].port;
+        tmp["height"] = 40;
+        tmp["width"] = 100;
+        tmp["color"] = flow_types[type].color;
+        tmp["x"] = svgSize.x - tmp.width;
+        tmp["y"] = curY;
+        curY += tmp.height+10;
+        dat.push(tmp);
+    }
+
+
+    /*Create the Label for the filters*/
+    SVG.append("svg:text")
+        .attr("class", "filterLabel")
+        .attr("x", function() { return svgSize.x;})
+        .attr("y", function() { return 10;})
+        .attr("dx", function() {return -100/2;})
+        .attr("dy", "1.2em")
+        .attr("text-anchor", "middle")
+        .text("Flow Filters:")
+        .attr("fill", "black");
+
+
+    SVG.selectAll(".all_filters")
+        .data(dat)
+        .enter()
+        .append("g")
+        .attr("class", "all_filters")
+        .on("click", function(target) {
+            var ele = d3.select(this)[0][0];
+            var rect = ele.getElementsByClassName("filter_rect")[0];
+            var port = flow_types[target.name].port;
+
+            if (cur_filters[port] == 1) {
+                /*Filter was enabled*/
+                delete cur_filters[port];
+                rect.setAttribute("opacity",.5);
+
+            } else {
+                /*Filter wasn't enabled*/
+                cur_filters[port] = 1;
+                rect.setAttribute("opacity", .75);
+            }
+            var value = $("#time_slider").slider("option", "value");
+            var curFlows = currentFlows(value, play_ts);
+
+            drawFlows(curFlows, play_servers);
+        })
+        .append("svg:rect")
+        .attr("class", "filter_rect")
+        .attr("x", function(datum) {return datum.x;})
+        .attr("y", function(datum) { return datum.y;})
+        .attr("height", function(datum){ return datum.height;})
+        .attr("width", function(datum){ return datum.width;})
+        .attr("rx", 15)
+        .attr("ry", 15)
+        .attr("opacity", .5)
+        .text(function(datum){return datum.name;})
+        .attr("fill", function(datum){ return datum.color;});
+
+    d3.selectAll(".all_filters")
+        .append("svg:text")
+        .attr("class", "noSelect")
+        .attr("x", function(datum) { return datum.x + datum.width;})
+        .attr("y", function(datum) { return datum.y + datum.height/2 - 15;})
+        .attr("dx", function(datum) {return -datum.width/2;})
+        .attr("dy", "1.2em")
+        .attr("text-anchor", "middle")
+        .text(function(datum){return datum.name;})
+        .attr("fill", "black");
+
+}
+
 function setup(servers, flows, time_stats) {
 
     // Initialize the canvas
@@ -346,24 +428,25 @@ function setup(servers, flows, time_stats) {
 
     /*Add the text with the time*/
     SVG.append("text")
-        .attr("x", function(d){return svgSize.x - 150;})
-        .attr("y", function(d){return svgSize.y - 25;})
+        .attr("x", function(d){return svgSize.cx - 150;})
+        .attr("y", function(d){return svgSize.cy - 25;})
         .text("Time (ms):");
     SVG.append("text")
         .attr("class","time_val")
-        .attr("x", function(d){return svgSize.x - 140;})
-        .attr("y", function(d){return svgSize.y - 10;})
+        .attr("x", function(d){return svgSize.cx - 140;})
+        .attr("y", function(d){return svgSize.cy - 10;})
         .text("0");
 
+    drawFilters();
 
     // Initialize definitions
     createDefs(SVG.append('svg:defs'));
 
     // Create the SVG servers
     var pathEndpoints = circleCoords(serverCircleRadius- serverRadius,
-                                    numServers, svgSize.x/2, svgSize.y/2);
+                                    numServers, svgSize.cx/2, svgSize.cy/2);
     var serverLayout = circleCoords(serverCircleRadius, numServers,
-                                    svgSize.x/2, svgSize.y/2);
+                                    svgSize.cx/2, svgSize.cy/2);
     servers = createServers(serverLayout, serverRadius, servers, pathEndpoints);
 
     // Setup Sliders
@@ -394,8 +477,14 @@ function currentFlows(value,ts) {
 
     /* Find the flows that are currently active */
     for (var i = 0; i < flow_map.length; i++) {
+        /* Check to see if the time is correct*/
         if ((value + ts["min"]) < flow_map[i].end && (value + ts["min"]) >= flow_map[i].start) {
-            curFlows.push(flow_map[i]);
+
+            /*Check to see if it's filtered*/
+            if(cur_filters[flow_map[i].dst_port] == null &&
+               cur_filters[flow_map[i].src_port] == null){
+                curFlows.push(flow_map[i]);
+            }
         }
     }
     return curFlows;
@@ -417,8 +506,8 @@ function drawFlows(curFlows, servers) {
 
         var lineData = [{'x': parseInt(src[0]), //Src
                          'y': parseInt(src[1])},
-                        {'x': svgSize.x/2, // Center
-                         'y': svgSize.y/2},
+                        {'x': svgSize.cx/2, // Center
+                         'y': svgSize.cy/2},
                         {'x': parseInt(dst[0]), // Dst
                          'y': parseInt(dst[1])}];
 
@@ -427,16 +516,19 @@ function drawFlows(curFlows, servers) {
                 .y(function(d) { return d.y; })
                 .interpolate("bundle");
 
-	var color = "blue";
-	if (curFlows[i]["dst_port"] == 8080 || curFlows[i]["src_port"] == 8080) {
+	var color = "red"; /*NOTE: Some that don't hit any of the colors */
+	if (curFlows[i]["dst_port"] == flow_types["Shuffle"].port ||
+            curFlows[i]["src_port"] == flow_types["Shuffle"].port) {
 	    // Shuffle
-	    color = "red";
-	} else if (curFlows[i]["dst_port"] == 50010 || curFlows[i]["src_port"] == 50010) {
+	    color = flow_types["Shuffle"].color;
+	} else if (curFlows[i]["dst_port"] == flow_types["DataNode"].port ||
+                   curFlows[i]["src_port"] == flow_types["DataNode"].port) {
 	    // DataNode
-	    color = "green";
-	} else if (curFlows[i]["dst_port"] == 9000 || curFlows[i]["src_port"] == 9000) {
+	    color = flow_types["DataNode"].color;
+	} else if (curFlows[i]["dst_port"] == flow_types["NameNode"].port ||
+                   curFlows[i]["src_port"] == flow_types["NameNode"].port) {
 	    // NameNode
-	    color = "orange";
+	    color = flow_types["NameNode"].color;
 	}
 
         SVG.append("path")
@@ -461,10 +553,10 @@ function draw_box(s) {
 function setup_play() {
     var max = $("#time_slider").slider("option", "max");
     if (play_timer == 0) {
-        console.log(play_timer);
+        //console.log(play_timer);
         play_timer = setInterval(function(){ play(max);}, simulation_speed);
     } else {
-        console.log("Cant setup, it already exists");
+        //console.log("Cant setup, it already exists");
     }
 }
 
