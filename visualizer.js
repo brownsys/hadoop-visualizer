@@ -377,12 +377,12 @@ function drawFilters(){
             if (cur_filters[port] == 1) {
                 /*Filter was enabled*/
                 delete cur_filters[port];
-                rect.setAttribute("opacity",.5);
+                rect.setAttribute("opacity", 0.6);
 
             } else {
                 /*Filter wasn't enabled*/
                 cur_filters[port] = 1;
-                rect.setAttribute("opacity", .75);
+                rect.setAttribute("opacity", 0.1);
             }
             var value = $("#time_slider").slider("option", "value");
             var curFlows = currentFlows(value, play_ts);
@@ -397,7 +397,7 @@ function drawFilters(){
         .attr("width", function(datum){ return datum.width;})
         .attr("rx", 15)
         .attr("ry", 15)
-        .attr("opacity", .5)
+        .attr("opacity", 0.6)
         .text(function(datum){return datum.name;})
         .attr("fill", function(datum){ return datum.color;});
 
