@@ -397,7 +397,16 @@ function drawFilters(){
         .attr("width", function(datum){ return datum.width;})
         .attr("rx", 15)
         .attr("ry", 15)
-        .attr("opacity", 0.6)
+        .attr("opacity", function(datum){
+            // Make Sure that the opacity is set to what the filters are
+            var isOn = cur_filters[datum.port];
+            if (isOn) {
+                return .1;
+            } else {
+                return .6;
+            }
+
+        })
         .text(function(datum){return datum.name;})
         .attr("fill", function(datum){ return datum.color;});
 
