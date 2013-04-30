@@ -11,28 +11,32 @@ var flow_types = {"Shuffle" : {"port" : 8080, "color": "blue"},
                   "NameNode" : {"port" : 9000, "color": "orange"}};
 var cur_filters = {};
 
-var node_mappings = {"10.200.0.2": "euc-nat",
-"10.200.0.1": "eucboss",
-"10.200.0.3": "euc01",
-"10.200.0.4": "euc02",
-"10.200.0.5": "euc03",
-"10.200.0.6": "euc04",
-"10.200.0.7": "euc05",
-"10.200.0.8": "euc06",
-"10.200.0.9": "euc07",
-"10.200.0.10": "euc08",
-"10.200.0.11": "euc09",
-"10.200.0.12": "euc10",
-"10.200.0.13": "euc11",
-"10.200.0.14": "euc12",
-"10.200.0.15": "euc13",
-"10.200.0.16": "euc14",
-"10.200.0.17": "euc15",
-"10.200.0.18": "euc16",
-"10.200.0.19": "euc17",
-"10.200.0.20": "euc18",
-"10.200.0.21": "euc19",
-"10.200.0.22": "euc20"};
+var hadoopPathTooltip = PathTooltip();
+
+var node_mappings = {
+    "10.200.0.2": "euc-nat",
+    "10.200.0.1": "eucboss",
+    "10.200.0.3": "euc01",
+    "10.200.0.4": "euc02",
+    "10.200.0.5": "euc03",
+    "10.200.0.6": "euc04",
+    "10.200.0.7": "euc05",
+    "10.200.0.8": "euc06",
+    "10.200.0.9": "euc07",
+    "10.200.0.10": "euc08",
+    "10.200.0.11": "euc09",
+    "10.200.0.12": "euc10",
+    "10.200.0.13": "euc11",
+    "10.200.0.14": "euc12",
+    "10.200.0.15": "euc13",
+    "10.200.0.16": "euc14",
+    "10.200.0.17": "euc15",
+    "10.200.0.18": "euc16",
+    "10.200.0.19": "euc17",
+    "10.200.0.20": "euc18",
+    "10.200.0.21": "euc19",
+    "10.200.0.22": "euc20"
+};
 
 /*
  TODO: Take in node_mappings for ip -> node name
@@ -138,6 +142,8 @@ function buildFlowMap(flows) {
             if (tags.length > 0) {
                 tags = tags[0];
 
+                entry.thread = tags.threadname;
+                entry.stack_trace = tags.stacktrace;
                 entry.jid = flows[flow].jid;
                 entry.src = tags["source"];
                 entry.src_port = tags["source_port"];
@@ -145,9 +151,25 @@ function buildFlowMap(flows) {
                 entry.dst_port = tags["dest_port"];
                 entry.start = tags["timestamp"];
 
+                entry.catagory = catagorize_flow(entry.src_port,
+                                                 entry.dst_port);
+
                 /*Get the endTime*/
                 var tstat = flows[flow]["tstat"];
                 if (tstat.length <= 2) {
+                    // RTT buisness for tooltip
+                    entry.average_rtt = tstat[0][28];
+                    entry.rtt_min = tstat[0][29];
+                    entry.rtt_max = tstat[0][30];
+                    entry.rtt_stddev = tstat[0][31];
+
+                    // Bytes transfered for tooltip
+                    entry.c2s_bytes = parseInt(tstat[0][8]);
+                    entry.s2c_bytes = parseInt(tstat[0][52]);
+
+                    // Length of the flow for the tooltip
+                    entry.duration = parseInt(tstat[0][88]);
+
                     // 88th entry is the length of the request
                     var flow_len = parseInt(tstat[0][88]);
                     entry.end = entry.start + flow_len;
@@ -160,11 +182,30 @@ function buildFlowMap(flows) {
 
                     entry.weight = line_weight;
                 }
+
                 map.push(entry);
             }
         }
     }
     return map;
+}
+
+function catagorize_flow(src_port, dst_port) {
+    if (dst_port == flow_types["Shuffle"].port ||
+        src_port == flow_types["Shuffle"].port) {
+	// Shuffle
+        return "Shuffle";
+    } else if (dst_port == flow_types["DataNode"].port ||
+               src_port == flow_types["DataNode"].port) {
+	// DataNode
+        return "DataNode";
+    } else if (dst_port == flow_types["NameNode"].port ||
+               src_port == flow_types["NameNode"].port) {
+	// NameNode
+        return "NameNode";
+    } else {
+        return null;
+    }
 }
 
 /* Alternate to flow map. Much faster*/
@@ -405,7 +446,6 @@ function drawFilters(){
             } else {
                 return .6;
             }
-
         })
         .text(function(datum){return datum.name;})
         .attr("fill", function(datum){ return datum.color;});
@@ -420,7 +460,6 @@ function drawFilters(){
         .attr("text-anchor", "middle")
         .text(function(datum){return datum.name;})
         .attr("fill", "black");
-
 }
 
 function setup(servers, flows, time_stats) {
@@ -493,8 +532,8 @@ function currentFlows(value,ts) {
         if ((value + ts["min"]) < flow_map[i].end && (value + ts["min"]) >= flow_map[i].start) {
 
             /*Check to see if it's filtered*/
-            if(cur_filters[flow_map[i].dst_port] == null &&
-               cur_filters[flow_map[i].src_port] == null){
+            if (cur_filters[flow_map[i].dst_port] == null &&
+               cur_filters[flow_map[i].src_port] == null) {
                 curFlows.push(flow_map[i]);
             }
         }
@@ -529,31 +568,30 @@ function drawFlows(curFlows, servers) {
                 .interpolate("bundle");
 
 	var color = "red"; /*NOTE: Some that don't hit any of the colors */
-	if (curFlows[i]["dst_port"] == flow_types["Shuffle"].port ||
-            curFlows[i]["src_port"] == flow_types["Shuffle"].port) {
-	    // Shuffle
-	    color = flow_types["Shuffle"].color;
-	} else if (curFlows[i]["dst_port"] == flow_types["DataNode"].port ||
-                   curFlows[i]["src_port"] == flow_types["DataNode"].port) {
-	    // DataNode
-	    color = flow_types["DataNode"].color;
-	} else if (curFlows[i]["dst_port"] == flow_types["NameNode"].port ||
-                   curFlows[i]["src_port"] == flow_types["NameNode"].port) {
-	    // NameNode
-	    color = flow_types["NameNode"].color;
-	}
 
-        SVG.append("path")
+        var flow_catagorization = catagorize_flow(curFlows[i]["src_port"],
+                                                  curFlows[i]["dst_port"]);
+
+        if (flow_catagorization != null) {
+            color = flow_types[flow_catagorization].color;
+        }
+
+        SVG.append("svg:path")
             .attr("d", lineFunction(lineData))
             .attr("stroke", color)
             .attr("opacity", .5)
             .attr("stroke-width", curFlows[i].weight)
-            .attr("fill", "none")
-            .on("mouseover", function() {draw_box(d3.select(this));})
-            .on("mouseover", remove_box);
+            .attr("fill", "none");
+        //.on("mouseover", function() {draw_box(d3.select(this));})
+            //.on("mouseover", remove_box);
     }
-}
 
+    var paths = SVG.selectAll("path")
+            .data(curFlows)
+            .call(hadoopPathTooltip);
+
+}
+/* TODO: Remove if the tooltip works out
 function remove_box() {
     console.log("whats up bitches");
 }
@@ -561,6 +599,7 @@ function remove_box() {
 function draw_box(s) {
     console.log(d3.select(s));
 }
+*/
 
 function setup_play() {
     var max = $("#time_slider").slider("option", "max");

@@ -1,0 +1,21 @@
+.path-tooltip {
+    text-align: left;
+}
+
+.path-tooltip .key {
+    display: inline-block;
+    float: left;
+    width: 90px;
+    font-weight: bold;
+}
+
+.path-tooltip .value {
+    display: inline-block;
+    float: left;
+    word-wrap: break-word;
+    max-width: 410px;
+}
+
+.path-tooltip .clear {
+    clear: both;
+}

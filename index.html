@@ -7,12 +7,16 @@
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.1/themes/base/jquery-ui.css" />
     <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
     <script src="http://code.jquery.com/ui/1.10.1/jquery-ui.js"></script>
-
+    <script src="jquery.tipsy.js"></script>
+    <script src="Tooltip.js"></script>
     <!--Visualizer-->
     <script type="text/javascript" src="visualizer.js"> </script>
 
     <!--Styles-->
     <link rel="stylesheet" href="all.css">
+    <link rel="stylesheet" href="tipsy.css">
+    <link rel="stylesheet" href="path-tooltip.css">
+
 </head>
 <body>
     <div id="content">
@@ -20,8 +24,6 @@
     <input type="file" id="files" name="file" />
     <button onclick="abortRead();">Cancel read</button>
     <div id="progress_bar"><div class="percent">0%</div></div>
-
-
 
     <div id="viz"></div>
     <div id="time_slider"></div>
