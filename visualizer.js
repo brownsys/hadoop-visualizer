@@ -255,6 +255,34 @@ function buildChangeMap() {
     return map;
 }
 
+function run_small_store() {
+    var flows = small_store_json();
+    if (SVG != null) {
+        d3.select("#viz")[0][0].innerHTML = "";
+
+        document.getElementById("time_slider").innerHTML = "";
+        document.getElementById("speed_slider").innerHTML = "";
+
+        flow_map = [];
+        play_timer = 0;
+        play_ts = {"min": 0};
+        play_servers = null;
+        play_weight = {"min": 9007199254740992, "max": -1};
+
+    }
+    var servers = getServers(flows);
+    var time_stats = generateTimeStats(flows);
+
+
+    //FIX: This could be the worst thing I have ever done
+    play_ts = time_stats;
+    play_servers = servers;
+
+    /* TODO: I shouldn't need the flows in the setup, right?*/
+    setup(servers, flows, time_stats);
+}
+
+
 /*
  * processFile input_file_text -> creates simulation
  * This function is called once the whole file is read in. It gets
