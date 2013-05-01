@@ -44,24 +44,24 @@ function handleFileSelect(evt) {
         alert('File read cancelled');
     };
     reader.onloadstart = function(e) {
+        document.getElementById('progress_bar').style.display = "block";
         document.getElementById('progress_bar').className = 'loading';
     };
     reader.onload = function(e) {
         // Ensure that the progress bar displays 100% at the end.
         progress.style.width = '100%';
         progress.textContent = '100%';
-        setTimeout("document.getElementById('progress_bar').className='';", 
-                   2000);
-        
+        setTimeout("document.getElementById('progress_bar').style.display='none';document.getElementById('progress_bar').className='';", 2000);
+
         /*TODO: Make this bitch an event*/
         processFile(e.target.result);
     }
-    
+
     reader.readAsText(evt.target.files[0]);
     // Read in the image file as a binary string.
-    
-    
-    
+
+
+
 }
 
 document.onload = document.getElementById('files').addEventListener('change',

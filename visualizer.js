@@ -1,7 +1,7 @@
 var flow_map = [];
 var SVG = null;
 var play_timer = 0;
-var svgSize = {cx : 600, cy : 600, x : 800, y: 600};
+var svgSize = {cx : 650, cy : 675, x : 850, y: 675};
 var play_ts = {"min": 0};
 var play_servers = null;
 var play_weight = {"min": Infinity, "max": -1};
@@ -59,7 +59,7 @@ function circleCoords(radius, steps, centerX, centerY) {
 }
 
 
-function createServers(coords, rad, servers, pathEnd) {
+function createServers(coords, rad, servers, pathEnd, linkEnd, linkStart) {
     var numCircles = 10;
     var dataset = [];
     var server_sort = function(a,b) {
@@ -121,12 +121,83 @@ function createServers(coords, rad, servers, pathEnd) {
             .data(dataset);
 
     for (var i = 0; i < circles[0].length; i++) {
-        servers[dataset[i]] = pathEnd[i];
+        servers[dataset[i]] = {path: pathEnd[i], utilEnd: linkEnd, utilStart: linkStart};
     }
 
     return servers;
 }
 
+function createUtilization(servers) {
+    var g_util = SVG.append("g")
+            .attr("class", "util");
+    var count = 0;
+    var circum = 2*Math.PI*(250 + 35);
+    var lineWidth = 10;
+    var lineHeight = 25;
+
+    var deg = lineWidth+10/(circum/360)*(Math.PI/180);
+
+    $.each(servers, function(i,d) {
+        if (i != "size") {
+
+
+            var x1 = svgSize.cx/2;
+            var y1 = svgSize.cy/2;
+
+
+            var dx = x1 - d.utilStart[count][0];// - d.utilEnd[count][0];
+            var dy = y1 - d.utilStart[count][1];// - d.utilEnd[count][1];
+            var stheta = Math.atan2(dy, dx);
+            stheta *= 180/Math.PI;
+            stheta += 90;
+
+
+            var x2 = d.utilStart[count][0];
+            var y2 = d.utilStart[count][1];
+
+
+            g_util.append("svg:rect")
+                .attr("class", "util")
+                .attr("id", "util" + i)
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("rx", 2)
+                .attr("ry", 2)
+                .attr("width", lineWidth)
+                .attr("height", lineHeight)
+                .attr('transform', "translate("+x2+","+y2+") rotate("+stheta+")");
+
+            var dx2 = x2-x1;
+            var dy2 = y2-y1;
+
+            var ndx2 = dx2 * Math.cos(deg) - dy2 * Math.sin(deg);
+            var ndy2 = dx2 * Math.sin(deg) + dy2 * Math.cos(deg);
+
+            var nx2 = ndx2 + x1;
+            var ny2 = ndy2 + y1;
+
+            var cdx = x1 - nx2;
+            var cdy = y1 - ny2;
+
+            var ctheta = Math.atan2(cdy,cdx);
+            ctheta *= 180/Math.PI;
+            ctheta += 90;
+
+            g_util.append("svg:rect")
+                .attr("class", "util")
+                .attr("id", "util" + i)
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("rx", 2)
+                .attr("ry", 2)
+                .attr("width", lineWidth)
+                .attr("height", lineHeight)
+                .attr('transform', "translate("+nx2+","+ny2+") rotate("+ctheta+")");
+
+            count++;
+        }
+    });
+}
 
 /* buidFlowMap flows -> [flow1, flow2, ..., flowN]
  * This function is where the heavy lifting happens. We scroll through
@@ -526,7 +597,19 @@ function setup(servers, flows, time_stats) {
                                     numServers, svgSize.cx/2, svgSize.cy/2);
     var serverLayout = circleCoords(serverCircleRadius, numServers,
                                     svgSize.cx/2, svgSize.cy/2);
-    servers = createServers(serverLayout, serverRadius, servers, pathEndpoints);
+
+    /*This is for the start and endpoints of the link utilization*/
+    var linkStartPoints = circleCoords(serverCircleRadius +
+                                       serverRadius,numServers, svgSize.cx/2, svgSize.cy/2);
+
+    var linkEndPoints = circleCoords(serverCircleRadius +
+                                       serverRadius+ 15,numServers, svgSize.cx/2, svgSize.cy/2);
+
+    servers = createServers(serverLayout, serverRadius, servers,
+ pathEndpoints, linkEndPoints, linkStartPoints);
+
+    // Setup utilization displays
+    createUtilization(servers);
 
     // Setup Sliders
     setupTimeSlider(SVG, time_stats, servers);
@@ -580,8 +663,8 @@ function drawFlows(curFlows, servers) {
     }
 
     for (var i = 0; i < curFlows.length; i++) {
-        var src = servers[curFlows[i].src];
-        var dst = servers[curFlows[i].dst];
+        var src = servers[curFlows[i].src].path;
+        var dst = servers[curFlows[i].dst].path;
 
         var lineData = [{'x': parseInt(src[0]), //Src
                          'y': parseInt(src[1])},
