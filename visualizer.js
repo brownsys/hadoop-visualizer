@@ -1,7 +1,7 @@
 var flow_map = [];
 var SVG = null;
 var play_timer = 0;
-var svgSize = {cx : 650, cy : 675, x : 850, y: 675};
+var svgSize = {cx : 650, cy : 675, x : 1000, y: 675};
 var play_ts = {"min": 0};
 var play_servers = null;
 var play_weight = {"min": Infinity, "max": -1};
@@ -10,6 +10,7 @@ var flow_types = {"Shuffle" : {"port" : 8080, "color": "blue"},
                   "DataNode" : {"port" : 50010, "color": "green"},
                   "NameNode" : {"port" : 9000, "color": "orange"}};
 var cur_filters = {};
+var utilization_info = {};
 
 var hadoopPathTooltip = PathTooltip();
 
@@ -136,14 +137,11 @@ function createUtilization(servers) {
     var lineHeight = 25;
 
     var deg = lineWidth+10/(circum/360)*(Math.PI/180);
-
     $.each(servers, function(i,d) {
         if (i != "size") {
 
-
             var x1 = svgSize.cx/2;
             var y1 = svgSize.cy/2;
-
 
             var dx = x1 - d.utilStart[count][0];// - d.utilEnd[count][0];
             var dy = y1 - d.utilStart[count][1];// - d.utilEnd[count][1];
@@ -151,21 +149,20 @@ function createUtilization(servers) {
             stheta *= 180/Math.PI;
             stheta += 90;
 
-
             var x2 = d.utilStart[count][0];
             var y2 = d.utilStart[count][1];
 
-
+            var sTransform = "translate("+x2+","+y2+") rotate("+stheta+")";
             g_util.append("svg:rect")
                 .attr("class", "util")
-                .attr("id", "util" + i)
+                .attr("id", i +"S")
                 .attr("x", 0)
                 .attr("y", 0)
                 .attr("rx", 2)
                 .attr("ry", 2)
                 .attr("width", lineWidth)
                 .attr("height", lineHeight)
-                .attr('transform', "translate("+x2+","+y2+") rotate("+stheta+")");
+                .attr('transform', sTransform);
 
             var dx2 = x2-x1;
             var dy2 = y2-y1;
@@ -183,20 +180,76 @@ function createUtilization(servers) {
             ctheta *= 180/Math.PI;
             ctheta += 90;
 
+            var cTransform = "translate("+nx2+","+ny2+") rotate("+ctheta+")";
             g_util.append("svg:rect")
                 .attr("class", "util")
-                .attr("id", "util" + i)
+                .attr("id", i+"S")
                 .attr("x", 0)
                 .attr("y", 0)
                 .attr("rx", 2)
                 .attr("ry", 2)
                 .attr("width", lineWidth)
                 .attr("height", lineHeight)
-                .attr('transform', "translate("+nx2+","+ny2+") rotate("+ctheta+")");
+                .attr('transform', cTransform);
+
+            utilization_info[i] =
+                {cTrans: cTransform, sTrans: sTransform, cId: i+"-C",
+                 SId:  i+"-S"};
 
             count++;
         }
     });
+}
+
+function test_utilization() {
+
+    var utils = d3.selectAll(".util_tmp");
+
+    if (utils[0].length > 0) {
+        utils.data([]).exit().remove();
+    }
+
+    for (var node in utilization_info) {
+        var g_util = SVG.append("g")
+                .attr("class", "util_tmp");
+        var cTransform = utilization_info[node].cTrans;
+        var sTransform = utilization_info[node].sTrans;
+        var lineWidth = 10;
+        var lineHeight = 24;
+
+        var cId = utilization_info[node].cId;
+        var sId = utilization_info[node].sId;
+
+        var newHeight = Math.random() * lineHeight;
+
+        g_util.append("svg:rect")
+            .attr("class", "util_tmp")
+            .attr('filter', 'url(#dropShadow)')
+            .attr("id", cId)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("rx", 2)
+            .attr("ry", 2)
+            .attr("width", lineWidth)
+            .attr("height", newHeight)
+            .attr('transform', cTransform)
+            .attr("fill","skyblue");
+
+        newHeight = Math.random() * lineHeight;
+        g_util.append("svg:rect")
+            .attr("class", "util_tmp")
+            .attr('filter', 'url(#dropShadow)')
+            .attr("id", sId)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("rx", 2)
+            .attr("ry", 2)
+            .attr("width", lineWidth)
+            .attr("height", newHeight)
+            .attr('transform', sTransform)
+            .attr("fill","red");
+
+    }
 }
 
 /* buidFlowMap flows -> [flow1, flow2, ..., flowN]
@@ -561,6 +614,39 @@ function drawFilters(){
         .attr("fill", "black");
 }
 
+function initSwim() {
+
+    var swim_height = 250;
+    var swim_box = SVG.append("svg:rect")
+            .attr("class", "swim_box")
+            .attr("x", function(){return svgSize.cx;})
+            .attr("y", function(){return svgSize.y - swim_height;})
+            .attr("height", function(){ return swim_height;})
+            .attr("width", function(){return svgSize.x - svgSize.cx;})
+            .attr("opacity", function(){return .25;})
+            .attr("fill", "gray");
+
+    var swim_text = SVG.append("svg:text")
+            .attr("class", "swim_title")
+            .attr("x", function(){return svgSize.cx;})
+            .attr("y", function(){return svgSize.y - swim_height - 3;})
+            .text("Swim Diagram")
+            .attr("fill", "black");
+
+    var midline = SVG.append("svg:rect")
+            .attr("class", "cur_swim_line")
+            .attr("x", function(){return svgSize.cx + ((svgSize.x -svgSize.cx)/2)-5;})
+            .attr("y", function(){return svgSize.y - swim_height;})
+            .attr("height", function(){ return swim_height;})
+            .attr("width", function(){return 10;})
+            .attr("fill","blue")
+            .attr("opacity", .25);
+
+
+
+}
+
+
 function setup(servers, flows, time_stats) {
 
     // Initialize the canvas
@@ -606,10 +692,15 @@ function setup(servers, flows, time_stats) {
                                        serverRadius+ 15,numServers, svgSize.cx/2, svgSize.cy/2);
 
     servers = createServers(serverLayout, serverRadius, servers,
- pathEndpoints, linkEndPoints, linkStartPoints);
+                            pathEndpoints, linkEndPoints, linkStartPoints);
+
+    // Setup swim graph
+    debugger;
+    initSwim();
 
     // Setup utilization displays
     createUtilization(servers);
+
 
     // Setup Sliders
     setupTimeSlider(SVG, time_stats, servers);
@@ -696,6 +787,8 @@ function drawFlows(curFlows, servers) {
         //.on("mouseover", function() {draw_box(d3.select(this));})
             //.on("mouseover", remove_box);
     }
+
+    test_utilization();
 
     var paths = SVG.selectAll("path")
             .data(curFlows)
