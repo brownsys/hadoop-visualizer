@@ -192,8 +192,48 @@ function createUtilization(servers) {
                 .attr("height", lineHeight)
                 .attr('transform', cTransform);
 
+            /*This is for centering the c*/
+            var tdeg = deg - .0057;
+            debugger;
+            dx2 = x2-x1;
+            dy2 = y2-y1;
+
+            ndx2 = dx2 * Math.cos(tdeg) - dy2 * Math.sin(tdeg);
+            ndy2 = dx2 * Math.sin(tdeg) + dy2 * Math.cos(tdeg);
+
+            nx2 = ndx2 + x1;
+            ny2 = ndy2 + y1;
+
+            cdx = x1 - nx2;
+            cdy = y1 - ny2;
+
+            var innerCTheta = Math.atan2(cdy,cdx);
+            innerCTheta *= 180/Math.PI;
+            innerCTheta += 90;
+
+            var innerCTrans = "translate("+nx2+","+ny2+") rotate("+innerCTheta+")";
+
+            tdeg = -.008;
+            dx2 = x2-x1;
+            dy2 = y2-y1;
+
+            ndx2 = dx2 * Math.cos(tdeg) - dy2 * Math.sin(tdeg);
+            ndy2 = dx2 * Math.sin(tdeg) + dy2 * Math.cos(tdeg);
+
+            nx2 = ndx2 + x1;
+            ny2 = ndy2 + y1;
+
+            cdx = x1 - nx2;
+            cdy = y1 - ny2;
+
+            var innerSTheta = Math.atan2(cdy,cdx);
+            innerSTheta *= 180/Math.PI;
+            innerSTheta += 90;
+
+            var innerSTrans = "translate("+nx2+","+ny2+") rotate("+innerSTheta+")";
+
             utilization_info[i] =
-                {cTrans: cTransform, sTrans: sTransform, cId: i+"-C",
+                {cTrans: innerCTrans, sTrans: innerSTrans, cId: i+"-C",
                  SId:  i+"-S"};
 
             count++;
@@ -214,7 +254,7 @@ function test_utilization() {
                 .attr("class", "util_tmp");
         var cTransform = utilization_info[node].cTrans;
         var sTransform = utilization_info[node].sTrans;
-        var lineWidth = 10;
+        var lineWidth = 6;
         var lineHeight = 24;
 
         var cId = utilization_info[node].cId;
@@ -695,7 +735,7 @@ function setup(servers, flows, time_stats) {
                             pathEndpoints, linkEndPoints, linkStartPoints);
 
     // Setup swim graph
-    debugger;
+
     initSwim();
 
     // Setup utilization displays
