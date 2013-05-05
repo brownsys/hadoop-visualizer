@@ -13,6 +13,10 @@ var flow_types = {"shuffle" : {"port" : 8080, "color": "black"},
 var tmp_flow_types_hack = {"shuffle" : {"port" : 8080, "color": "black"},
                            "datanode" : {"port" : 50010, "color": "gray"},
                            "namenode" : {"port" : 9000, "color": "blue"},
+                           "application_1367864756511_0004":{"color":"red"},
+                           "application_1367864756511_0003":{"color":"red"},
+                           "application_1367864756511_0002":{"color":"red"},
+                           "application_1367864756511_0001":{"color":"red"},
                            "application_1367807925576_0004":{"color":"red"},
                            "application_1367807925576_0003":{"color":"red"},
                            "application_1367807925576_0002":{"color":"red"},
@@ -821,7 +825,7 @@ function drawSwimData(value, ts) {
         if (swimmers[i] == null) {
             break;
         } else {
-            debugger;
+
             var init_height = box_y + (i*height_per);
             var pos_check = ((swimmers[i].t_start - (curTime-((time_diff * percent)/2)))* time_width);
             var start_x = box_x;
@@ -848,7 +852,6 @@ function drawSwimData(value, ts) {
                 .attr("y2", init_height)
                 .attr("stroke", color)
                 .attr("stroke-width", 5);
-            debugger;
         }
     }
 

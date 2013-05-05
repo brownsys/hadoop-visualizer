@@ -6,11 +6,11 @@ var PathTooltip = function() {
     var tooltip = Tooltip().title(function(d) {
         var data = d;
 
-        var reserved = ["jid", "thread", "stack_trace", "src",
+        var reserved = ["jid", "thread", "category", "src",
                         "src_port", "dst", "dst_port", "catagory",
                         "average_rtt", "rtt_min", "rtt_max",
                         "rtt_stddev", "c2s_bytes",
-                        "s2c_bytes", "duration"];
+                        "s2c_bytes", "stack_trace","duration"];
 
         function appendRow(key, value, tooltip) {
             var keyrow = $("<div>").attr("class", "key").append(key);
