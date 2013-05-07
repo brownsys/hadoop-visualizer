@@ -12,7 +12,14 @@ var flow_types = {"Shuffle" : {"port" : 8080, "color": "blue"},
 var cur_filters = {};
 var utilization_info = {};
 
+// Data
+var util_data = {};
+
 var hadoopPathTooltip = PathTooltip();
+var EPOCH_END = 1367697119;
+var EPOCH_START = 1367696959;
+var swim_map = {};
+
 
 var node_mappings = {
     "10.200.0.2": "euc-nat",
@@ -128,15 +135,34 @@ function createServers(coords, rad, servers, pathEnd, linkEnd, linkStart) {
     return servers;
 }
 
+function cleanUtilData() {
+    var newUtilData = {};
+    for(var key in util_data){
+        var newKey = Math.floor(parseFloat(key)*1000);
+
+        var ports = util_data[key];
+
+        /*TODO: That 20 really shouldn't be hardcoded*/
+        var newPorts = [];
+        for (var i=1; i < 21; i++) {
+            newPorts[i] = {"in": ports[i.toString()][0], "out":ports[i.toString()][1]};
+        }
+        newUtilData[newKey] = newPorts;
+    }
+    util_data = newUtilData;
+}
+
 function createUtilization(servers) {
+    cleanUtilData();
+
     var g_util = SVG.append("g")
             .attr("class", "util");
     var count = 0;
     var circum = 2*Math.PI*(250 + 35);
     var lineWidth = 10;
-    var lineHeight = 25;
+    var lineHeight = 30;
 
-    var deg = lineWidth+10/(circum/360)*(Math.PI/180);
+    var deg = ((lineWidth+ 1)/(circum/360))*(Math.PI/180);
     $.each(servers, function(i,d) {
         if (i != "size") {
 
@@ -194,7 +220,7 @@ function createUtilization(servers) {
 
             /*This is for centering the c*/
             var tdeg = deg - .0057;
-            debugger;
+
             dx2 = x2-x1;
             dy2 = y2-y1;
 
@@ -232,63 +258,74 @@ function createUtilization(servers) {
 
             var innerSTrans = "translate("+nx2+","+ny2+") rotate("+innerSTheta+")";
 
-            utilization_info[i] =
-                {cTrans: innerCTrans, sTrans: innerSTrans, cId: i+"-C",
-                 SId:  i+"-S"};
+            utilization_info[node_mappings[i]] =
+                {cTrans: innerCTrans, sTrans: innerSTrans, cId: node_mappings[i]+"-C",
+                 SId:  node_mappings[i]+"-S"};
 
             count++;
         }
     });
 }
 
-function test_utilization() {
-
+function draw_utilization(value,ts) {
     var utils = d3.selectAll(".util_tmp");
 
-    if (utils[0].length > 0) {
-        utils.data([]).exit().remove();
-    }
+    if (util_data[value+ ts["min"]] != null) {
+        if (utils[0].length > 0) {
+            utils.data([]).exit().remove();
+        }
 
-    for (var node in utilization_info) {
-        var g_util = SVG.append("g")
-                .attr("class", "util_tmp");
-        var cTransform = utilization_info[node].cTrans;
-        var sTransform = utilization_info[node].sTrans;
-        var lineWidth = 6;
-        var lineHeight = 24;
+        for (var node in utilization_info) {
+            /*Need to identify The node*/
 
-        var cId = utilization_info[node].cId;
-        var sId = utilization_info[node].sId;
+            if (node != "eucboss") {
+                var curData = util_data[value+ ts["min"]];
 
-        var newHeight = Math.random() * lineHeight;
+                var portNum = node;
+                portNum = portNum.replace("euc", "");
+                portNum = parseInt(portNum);
 
-        g_util.append("svg:rect")
-            .attr("class", "util_tmp")
-            .attr('filter', 'url(#dropShadow)')
-            .attr("id", cId)
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("rx", 2)
-            .attr("ry", 2)
-            .attr("width", lineWidth)
-            .attr("height", newHeight)
-            .attr('transform', cTransform)
-            .attr("fill","skyblue");
+                var g_util = SVG.append("g")
+                        .attr("class", "util_tmp");
+                var cTransform = utilization_info[node].cTrans;
+                var sTransform = utilization_info[node].sTrans;
+                var lineWidth = 6;
+                var lineHeight = 30;
 
-        newHeight = Math.random() * lineHeight;
-        g_util.append("svg:rect")
-            .attr("class", "util_tmp")
-            .attr('filter', 'url(#dropShadow)')
-            .attr("id", sId)
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("rx", 2)
-            .attr("ry", 2)
-            .attr("width", lineWidth)
-            .attr("height", newHeight)
-            .attr('transform', sTransform)
-            .attr("fill","red");
+                var cId = utilization_info[node].cId;
+                var sId = utilization_info[node].sId;
 
+                var newHeight = (curData[portNum].in/10) * lineHeight;
+
+                g_util.append("svg:rect")
+                    .attr("class", "util_tmp")
+                    .attr('filter', 'url(#dropShadow)')
+                    .attr("id", cId)
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("rx", 2)
+                    .attr("ry", 2)
+                    .attr("width", lineWidth)
+                    .attr("height", newHeight)
+                    .attr('transform', cTransform)
+                    .attr("fill","green");
+
+                newHeight = (curData[portNum].out/100) * lineHeight;
+
+                g_util.append("svg:rect")
+                    .attr("class", "util_tmp")
+                    .attr('filter', 'url(#dropShadow)')
+                    .attr("id", sId)
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("rx", 2)
+                    .attr("ry", 2)
+                    .attr("width", lineWidth)
+                    .attr("height", newHeight)
+                    .attr('transform', sTransform)
+                    .attr("fill","red");
+            }
+        }
     }
 }
 
@@ -303,52 +340,53 @@ function buildFlowMap(flows) {
         if (flows.hasOwnProperty(flow)) {
             var entry = {};
             var tags = flows[flow]["trace-tags"];
-            if (tags.length > 0) {
-                tags = tags[0];
 
-                entry.thread = tags.threadname;
-                entry.stack_trace = tags.stacktrace;
-                entry.jid = flows[flow].jid;
-                entry.src = tags["source"];
-                entry.src_port = tags["source_port"];
-                entry.dst = tags["dest"];
-                entry.dst_port = tags["dest_port"];
-                entry.start = tags["timestamp"];
+            var curFlow = flows[flow];
 
-                entry.catagory = catagorize_flow(entry.src_port,
-                                                 entry.dst_port);
+            entry.thread = curFlow.ThreadName;
+            entry.stack_trace = curFlow["stack-trace"];
+            entry.jid = curFlow.jid;
+            entry.src = curFlow["local-host"];
+            entry.src_port = curFlow["local-port"];
+            entry.dst = curFlow["remote-host"];
+            entry.dst_port = curFlow["remote-port"];
 
-                /*Get the endTime*/
-                var tstat = flows[flow]["tstat"];
-                if (tstat.length <= 2) {
-                    // RTT buisness for tooltip
-                    entry.average_rtt = tstat[0][28];
-                    entry.rtt_min = tstat[0][29];
-                    entry.rtt_max = tstat[0][30];
-                    entry.rtt_stddev = tstat[0][31];
+            entry.catagory = catagorize_flow(entry.src_port,
+                                             entry.dst_port);
 
-                    // Bytes transfered for tooltip
-                    entry.c2s_bytes = parseInt(tstat[0][8]);
-                    entry.s2c_bytes = parseInt(tstat[0][52]);
+            /*Get the endTime*/
+            var tstat = flows[flow]["tstat"];
+            if (tstat != null && tstat.length <= 2) {
+                // RTT buisness for tooltip
+                entry.average_rtt = tstat[0][28];
+                entry.rtt_min = tstat[0][29];
+                entry.rtt_max = tstat[0][30];
+                entry.rtt_stddev = tstat[0][31];
 
-                    // Length of the flow for the tooltip
-                    entry.duration = parseInt(tstat[0][88]);
+                // Now getting the timestamp from tstat
+                entry.start = parseInt(tstat[0][97]);
 
-                    // 88th entry is the length of the request
-                    var flow_len = parseInt(tstat[0][88]);
-                    entry.end = entry.start + flow_len;
+                // Bytes transfered for tooltip
+                entry.c2s_bytes = parseInt(tstat[0][8]);
+                entry.s2c_bytes = parseInt(tstat[0][52]);
 
-                    //8th entry for the size of the flow
-                    var bytesTransfered = parseInt(tstat[0][8]);
-                    var weight = Math.log(bytesTransfered/flow_len);
-                    var line_weight = (((15 - 3)*(weight - play_weight.min))/
-                        (play_weight.max -  play_weight.min)) + 3;
+                // Length of the flow for the tooltip
+                entry.duration = parseInt(tstat[0][88]);
 
-                    entry.weight = line_weight;
-                }
+                // 88th entry is the length of the request
+                var flow_len = parseInt(tstat[0][88]);
+                entry.end = entry.start + flow_len;
 
+                //8th entry for the size of the flow
+                var bytesTransfered = parseInt(tstat[0][8]);
+                var weight = Math.log(bytesTransfered/flow_len);
+                var line_weight = (((15 - 3)*(weight - play_weight.min))/
+                                   (play_weight.max -  play_weight.min)) + 3;
+
+                entry.weight = line_weight;
                 map.push(entry);
             }
+
         }
     }
     return map;
@@ -420,7 +458,8 @@ function buildChangeMap() {
 }
 
 function run_small_store() {
-    var flows = small_store_json();
+    var flows = large_json();
+
     if (SVG != null) {
         d3.select("#viz")[0][0].innerHTML = "";
 
@@ -492,23 +531,24 @@ function generateTimeStats(input) {
     var ret = {"min" : 1000000000000000, "max" : 0};
     for (var flow in input) {
         if (input.hasOwnProperty(flow)) {
-            var timestamp = null;
-
-            /* Checking to make sure it has a tags field and getting
-             * the timestamp out*/
-            var tags = input[flow]["trace-tags"];
-            if (tags.length > 0) {
-                timestamp = tags[0].timestamp;
-                if (timestamp < ret["min"]) {
-                    ret["min"] = timestamp;
-                }
-            }
 
             /* Checking to make sure there is the tstat field/ getting
              * max */
 
             var tstat = input[flow]["tstat"];
-            if (tstat.length <= 2) {
+            if (tstat != null && tstat.length <= 2) {
+                var timestamp = null;
+
+                /* Checking to make sure it has a tags field and getting
+                 * the timestamp out*/
+
+                timestamp = parseInt(tstat[0][97]);
+
+                if (timestamp < ret["min"]) {
+                    ret["min"] = timestamp;
+                }
+
+
 
                 // 88th entry is the length of the request
                 var flow_len = parseInt(tstat[0][88]);
@@ -546,6 +586,23 @@ function getServers(input) {
         if (input.hasOwnProperty(flow)) {
 
             //Checking to make sure it has a tags field
+
+            //New Way
+            var src = input[flow]["local-host"][0];
+            var dst = input[flow]["remote-host"][0];
+
+            // Got to keep track of the size
+            if (servers[src] != 1) {
+                servers.size += 1;
+                servers[src] = 1;
+            }
+
+            if (servers[dst] != 1) {
+                servers.size += 1;
+                servers[dst] = 1;
+            }
+
+            /*
             var tags = input[flow]["trace-tags"];
             if (tags.length > 0) {
                 var src = tags[0].source;
@@ -562,7 +619,8 @@ function getServers(input) {
                     servers[dst] = 1;
                 }
 
-            }
+             }
+             */
         }
     }
     return servers;
@@ -656,7 +714,7 @@ function drawFilters(){
 
 function initSwim() {
 
-    var swim_height = 250;
+    var swim_height = 450;
     var swim_box = SVG.append("svg:rect")
             .attr("class", "swim_box")
             .attr("x", function(){return svgSize.cx;})
@@ -686,9 +744,105 @@ function initSwim() {
 
 }
 
+function cleanSwimData() {
+    var swim_data = swim_json();
+    for (var i=0; i < swim_data.length; i++) {
+        var str = swim_data[i][1];
+        var time = str.split("_")[1];
+        var type = str.split("_")[0];
+        if (swim_map[swim_data[i][2]] == null)
+            swim_map[swim_data[i][2]] = {};
+        if( time == "START") {
+            swim_map[swim_data[i][2]].t_start = parseInt(swim_data[i][0]*1000);
+        } else {
+            swim_map[swim_data[i][2]].t_end = parseInt(swim_data[i][0]*1000);
+        }
+        swim_map[swim_data[i][2]].jid = swim_data[i][3];
+        swim_map[swim_data[i][2]].type = type;
+    }
+}
+
+function getCurSwimmers(curTime, time_width, ts, bucket_num) {
+    var swimmers = Array(bucket_num);
+    var swim_num = 0;
+    for (var swimmer in swim_map) {
+        var cur_swimmer = swim_map[swimmer];
+        var t_start = cur_swimmer.t_start;
+        var t_end = cur_swimmer.t_end;
+
+        if(curTime < t_end && curTime >= t_start) {
+            swimmers[swim_num] = cur_swimmer;
+            swim_num +=1;
+
+        }
+        if (swim_num >= bucket_num) {
+            return swimmers;
+        }
+    }
+    return swimmers;
+}
+
+function drawSwimData(value, ts) {
+    var curTime = value + ts["min"];
+
+    var container = d3.selectAll(".swim_box")[0][0];
+    var box_x = parseInt(container.getAttribute("x"));
+    var box_y = parseInt(container.getAttribute("y")) + 5;
+
+    var box_height = parseInt(container.getAttribute("height"));
+    var box_width = parseInt(container.getAttribute("width"));
+
+    var time_diff = ts["max"] - ts["min"];
+    var percent = .02;
+    var time_width = box_width/(time_diff*percent);
+
+    var bucket_num = 27;
+    var height_per = box_height/bucket_num;
+    var swimmers = getCurSwimmers(curTime, time_width, ts, bucket_num);
+
+    var lines = d3.selectAll("line");
+    if (lines.length > 0) {
+        lines.data([]).exit().remove();
+    }
+
+    for (var i = 0; i < swimmers.length; i++) {
+        if (swimmers[i] == null) {
+            break;
+        } else {
+            var init_height = box_y + (i*height_per);
+            var pos_check = ((swimmers[i].t_start - (curTime-((time_diff * percent)/2)))* time_width);
+            var start_x = box_x;
+            if (pos_check > 0) {
+                start_x = box_x + pos_check;
+            }
+
+            pos_check = ((curTime + ((time_diff*percent)/2)) -swimmers[i].t_end) * time_width;
+            var end_x = end_x = box_x + box_width;
+            if (pos_check > 0) {
+                end_x = (box_x + box_width) - pos_check;
+            }
+
+            var color = "blue";
+            if (swimmers[i].type == "MAPPER") {
+                color = "red";
+            }
+
+            SVG.append("svg:line")
+                .attr("class", "swim_line")
+                .attr("x1", start_x)
+                .attr("x2", end_x)
+                .attr("y1", init_height)
+                .attr("y2", init_height)
+                .attr("stroke", color)
+                .attr("stroke-width", 5);
+            debugger;
+        }
+    }
+
+}
 
 function setup(servers, flows, time_stats) {
-
+    util_data = util_json();
     // Initialize the canvas
     SVG = d3.select("#viz").append("svg")
             .attr("width", svgSize.x)
@@ -735,8 +889,8 @@ function setup(servers, flows, time_stats) {
                             pathEndpoints, linkEndPoints, linkStartPoints);
 
     // Setup swim graph
-
     initSwim();
+    cleanSwimData();
 
     // Setup utilization displays
     createUtilization(servers);
@@ -746,6 +900,7 @@ function setup(servers, flows, time_stats) {
     setupTimeSlider(SVG, time_stats, servers);
     setupSpeedSlider();
 }
+
 
 function createDefs(defs) {
     var dropShadowFilter = defs.append('svg:filter')
@@ -771,6 +926,7 @@ function currentFlows(value,ts) {
     /* Find the flows that are currently active */
     for (var i = 0; i < flow_map.length; i++) {
         /* Check to see if the time is correct*/
+
         if ((value + ts["min"]) < flow_map[i].end && (value + ts["min"]) >= flow_map[i].start) {
 
             /*Check to see if it's filtered*/
@@ -787,10 +943,14 @@ function currentFlows(value,ts) {
 function drawFlows(curFlows, servers) {
 
     // Remove the previous flows
-    var lines = d3.selectAll("path");
-
-    if (lines[0].length > 0) {
+    var lines = $("path").unbind();//d3.selectAll("path");
+    lines = d3.selectAll("path");
+    if (lines.length > 0) {
         lines.data([]).exit().remove();
+        if($(".tipsy").length > 1) {
+            $(".tipsy").remove();
+        }
+
     }
 
     for (var i = 0; i < curFlows.length; i++) {
@@ -824,26 +984,13 @@ function drawFlows(curFlows, servers) {
             .attr("opacity", .5)
             .attr("stroke-width", curFlows[i].weight)
             .attr("fill", "none");
-        //.on("mouseover", function() {draw_box(d3.select(this));})
-            //.on("mouseover", remove_box);
-    }
 
-    test_utilization();
+    }
 
     var paths = SVG.selectAll("path")
             .data(curFlows)
             .call(hadoopPathTooltip);
-
 }
-/* TODO: Remove if the tooltip works out
-function remove_box() {
-    console.log("whats up bitches");
-}
-
-function draw_box(s) {
-    console.log(d3.select(s));
-}
-*/
 
 function setup_play() {
     var max = $("#time_slider").slider("option", "max");
@@ -871,6 +1018,8 @@ function play(end_time) {
         play_timer=0;
     }
     var curFlows = currentFlows(value, play_ts);
+    draw_utilization(value, play_ts);
+    drawSwimData(value, play_ts);
     drawFlows(curFlows, play_servers);
 }
 
@@ -912,7 +1061,9 @@ function setupTimeSlider(SVG, ts, servers) {
             slide: function( event, ui ) {
                 d3.selectAll("text.time_val").text(ui.value+1);
                 var curFlows = currentFlows(ui.value, ts);
+                draw_utilization(ui.value ,ts);
                 drawFlows(curFlows, servers);
+                drawSwimData(ui.value, ts);
             }
         });
     });

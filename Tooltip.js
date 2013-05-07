@@ -1,5 +1,4 @@
 jQuery.fn.outerHTML = function() {
-    console.log("hit");
     return jQuery('<div />').append(this.eq(0).clone()).html();
 };
 
