@@ -6,9 +6,21 @@ var play_ts = {"min": 0};
 var play_servers = null;
 var play_weight = {"min": Infinity, "max": -1};
 var simulation_speed = 10;
-var flow_types = {"Shuffle" : {"port" : 8080, "color": "blue"},
-                  "DataNode" : {"port" : 50010, "color": "green"},
-                  "NameNode" : {"port" : 9000, "color": "orange"}};
+var flow_types = {"shuffle" : {"port" : 8080, "color": "black"},
+                  "datanode" : {"port" : 50010, "color": "gray"},
+                  "namenode" : {"port" : 9000, "color": "blue"}};
+// FIX: Get this shit under control
+var tmp_flow_types_hack = {"shuffle" : {"port" : 8080, "color": "black"},
+                           "datanode" : {"port" : 50010, "color": "gray"},
+                           "namenode" : {"port" : 9000, "color": "blue"},
+                           "application_1367807925576_0004":{"color":"red"},
+                           "application_1367807925576_0003":{"color":"red"},
+                           "application_1367807925576_0002":{"color":"red"},
+                           "resourcemanager": {"color":"cyan"},
+                           "nodemanager":{"color":"yellow"},
+                           "unknown": {"color":"brown"},
+                          "historyserver":{"color":"green"}};
+
 var cur_filters = {};
 var utilization_info = {};
 
@@ -351,8 +363,7 @@ function buildFlowMap(flows) {
             entry.dst = curFlow["remote-host"];
             entry.dst_port = curFlow["remote-port"];
 
-            entry.catagory = catagorize_flow(entry.src_port,
-                                             entry.dst_port);
+            entry.category = curFlow["category"];
 
             /*Get the endTime*/
             var tstat = flows[flow]["tstat"];
@@ -775,6 +786,7 @@ function getCurSwimmers(curTime, time_width, ts, bucket_num) {
             swim_num +=1;
 
         }
+
         if (swim_num >= bucket_num) {
             return swimmers;
         }
@@ -809,6 +821,7 @@ function drawSwimData(value, ts) {
         if (swimmers[i] == null) {
             break;
         } else {
+            debugger;
             var init_height = box_y + (i*height_per);
             var pos_check = ((swimmers[i].t_start - (curTime-((time_diff * percent)/2)))* time_width);
             var start_x = box_x;
@@ -969,13 +982,11 @@ function drawFlows(curFlows, servers) {
                 .y(function(d) { return d.y; })
                 .interpolate("bundle");
 
-	var color = "red"; /*NOTE: Some that don't hit any of the colors */
-
-        var flow_catagorization = catagorize_flow(curFlows[i]["src_port"],
-                                                  curFlows[i]["dst_port"]);
-
-        if (flow_catagorization != null) {
-            color = flow_types[flow_catagorization].color;
+        var color = "purple";
+        if(tmp_flow_types_hack[curFlows[i].category[0]] != null) {
+	    color = tmp_flow_types_hack[curFlows[i].category[0]].color;
+        } else {
+            debugger;
         }
 
         SVG.append("svg:path")
