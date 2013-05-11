@@ -1,31 +1,52 @@
 \section{Introduction}
 \label{sec:intro}
-This is a simple example file on how to write a report using LaTeX.
-Just use it as a base and replace the content. I put some examples of
-commonly used features, but there are many more. Generally, you learn
-these on demand. Examples include:
 
-\begin{itemize}
-\item Lists
-\item Tables
-\item Math text
-\end{itemize}
+Over the past several years the collection and analysis of ``big data'' - data 
+sets that are either too large, or grow too quickly, to be processed on a single 
+machine - has become extremely important for business, government, science, and 
+society at large. Correspondingly, many frameworks - commonly called Data 
+Intensive Scalable Computing (DISC) frameworks - have been proposed to process 
+these datasets, such as Google's MapReduce~\cite{mapreduce}, Microsoft's 
+Dryad~\cite{dryad}, and Spark~\cite{spark}. 
 
-After you write your LaTeX source, you have to compile it, run
-BibTeX, and then compile twice again, to get all cross-references 
-right. I also included a Makefile to make that whole process easier.
-You just have to type \texttt{make} if you have your environment set.
-It should work on Linux, MacOS, and cygwin. If you are running 
-anything else, you should know how to set it up too.
+Despite their success, there still remain important challenges to making these 
+framework's scalable and universally applicable. In this work, we focus on one 
+such challenge, the interaction of DISC applications with the network in which they 
+execute. Due to their distributed nature, the network is a key resource for 
+their performance, yet how they interact with the network is poorly understood. 
+This is exacerbated by two trends: applications are getting more complex, and 
+are more and more frequently executed in large, shared datacenter cloud 
+infrastructures. There are recent opportunities that promise to greatly improve 
+and control this interaction, such as software-defined programmable networks, 
+new network sharing mechanisms and new datacenter network topologies, but to 
+both guide their use and development, we need a systematic study of their 
+impact on the end-to-end performance of applications. 
 
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
+DISC frameworks distribute the processing and storage of data across many 
+machines hosted in large data centers, and applications run in these systems 
+have several layers of complexity: an application is composed of many 
+interdependent jobs, and a job is composed of many tasks which run on individual 
+machines and generate demanding traffic patterns on the network.
 
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
-Some sample text. Paragraphs are created by blank lines in the source.
+In datacenter environments, jobs are usually executed by many users 
+simultaneously, either in public or virtual clouds. These jobs also compete for 
+network resources with other traffic such as maintenance or interactive 
+processes. While current virtualization and scheduling techniques provide 
+solutions for the sharing of computation, memory, and storage resources in a 
+datacenter, solutions for sharing the network are still under-developed, and 
+primarily rely on TCP’s per-flow fairness. In response, there has been a recent 
+surge of work trying to address this problem, by improving datacenter network 
+topologies~\cite{fattree, vl2}, TCP’s performance in data 
+centers~\cite{XCP, DCTCP}, and new sharing semantics, like performance 
+isolation~\cite{Oktopus}, fairness~\cite{faircloud}, and deadlines~\cite{D3}. 
+While these works present advances in the right direction, we still lack a 
+principled understanding of how these frameworks use data center networks. 
+Additionally, we do not fully understand the impact of network performance on 
+an application’s end-to-end performance.
+
+In this work we are able to gain insight into the interaction between DISC 
+frameworks and the network in which they are executed through the use of
+application and low level tracing combined with a clever visualization. In the 
+following sections we discuss the high and low level tracing mechanisms in 
+detail (Section~\ref{sec:tracing}) and discuss the details of a visualization of 
+collected traces (Section~\ref{sec:viz}).
