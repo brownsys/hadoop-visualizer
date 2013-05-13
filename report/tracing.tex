@@ -26,14 +26,16 @@ We have augmented an X-Trace instrumented alpha version of Hadoop 2.0.4 to creat
 X-Trace events for every TCP socket created. This enables us to gain a deeper insight
 into every TCP socket by providing a history of events that triggered the socket and
 the 5-tuple related to it (i.e. source IP/port, destination IP/port, and protocol).
-Figure~\ref{fig:xtrace} is an example graphic that shows 6 causally related events that
+Figure~\ref{fig:xtrace} is an example graphic that shows causally related events that
 led to a TCP socket being created. Each event box contains a unique 16 character 
-identifier and a short one description of the event. Not show here for space reasons is
-additional text that is displayed when a mouse is hovered over an event box. The additional
-information that is displayed for the {\em SocketIOWithTimeout.connect()} event includes
-the 5-tuple of the socket and a related stacktrace of events that triggered it. In addition
-to the event context information an event graph is produced for each job that is submitted,
-this way the user can easily identify which TCP flow is associated with a given Hadoop job.
+identifier and a short description of the event. The black box to the left of the 
+figure represents additional information related to the event it points to. This includes 
+a subset of information available for each event, such as if the event relates to a socket
+connect call it displays the source IP/port and destination IP/port. Not displayed for space
+reasons in the black text box is the stacktrace of function calls that led to this event. In 
+addition to the event context information an event graph is produced for each job that is 
+submitted, this way the user can easily identify which TCP flow is associated with a given 
+Hadoop job.
 
 \begin{figure}
 \centering
@@ -60,9 +62,9 @@ Hadoop and tcpdump also exposes a 5-tuple for each packet we can easily correlat
 the application events that create sockets to the tcpdump captured packets by 
 pairing up 5-tuples. In our implementation after completing a set of jobs we 
 shutdown tcpdump, collect all the resulting tcpdump data, Hadoop logs, etc. and 
-post-process the data to create a general json structure. This json structure maps
+post-process the data to create a general JSON structure. This JSON structure maps
 a flow ID (essentially the 5-tuple) to various application and low-level details. 
-This json structure is later used in Section~\ref{sec:viz} to aid in visualizing the 
+This JSON structure is later used in Section~\ref{sec:viz} to aid in visualizing the 
 progression of events in the cluster.
 
 \subsection{Tracing Results}
