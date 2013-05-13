@@ -85,9 +85,32 @@ represented.
 In addition to low-level TCP flow throughput information Figure~\ref{fig:tput} also shows 
 application-level information regarding what type of service the flow is associated with. 
 Hadoop has several services and stages during its execution, which are decoded in the 
-color-category table shown in Figure~\ref{fig:cats}. 
+color-category table shown in Figure~\ref{fig:cats}. We can see by Figure~\ref{fig:tput}
+that high throughput flows are related to Shuffle and DataNode traffic and low throughput
+flows are related to NameNode traffic.
 
-Figure~\ref{fig:duration_cdf}
+Prior work with the SDN controller PANE~\cite{PANE} saw success by giving higher 
+priority to Shuffle traffic related flows. Through the use of an OpenFlow enabled switch 
+connected to our cluster machines we were able to setup reservations for lower throughput 
+NameNode related RPC call related flows. These reservations were accomplished through 
+the use of the same PANE controller discussed in~\cite{PANE}. By issuing reservations 
+for NameNode traffic we were able to setup higher priority queues that guaranteed 
+bandwidth of 10Mbps 
+for all NameNode related RPC calls. Our hypothesis was that by providing 
+guaranteed minimum bandwidth for control message flows we would lower their
+latency and potentially speed up a job's execution. Figure~\ref{fig:duration_cdf}
+shows a CDF of the duration of all NameNode related flows between two different
+executions of the same jobs, with and with-out these reservations. It should be
+noted that the x-axis is in milliseconds but with a factor of $10^4$. Flows whose
+total duration less than 10 seconds saw the most improvement. Averaged over three
+different runs with and with-out reservations the average decrease in job 
+completion time with NameNode reservations was a little over 51 seconds, which is
+roughly a 3.5\% improvement. During the execution of these jobs we also measured
+the port utilization on the switch and found that the 1Gbps ports were not 
+significantly utilized over the lifetime of the jobs. Our new hypothesis, which is
+left for future work, is that if we increase the number of simultaneous jobs or 
+add non-Hadoop traffic to the network that the use of NameNode reservations will 
+show a more significant improvement. 
 
 \begin{comment}
 \begin{figure}
@@ -109,14 +132,21 @@ Figure~\ref{fig:duration_cdf}
 
 \begin{figure}
 \centering
-\includegraphics[width=0.7\textwidth]{figures/clock_v_throughput_port.pdf}
+\includegraphics[width=0.6\textwidth]{figures/clock_v_throughput_port.pdf}
 \caption{Average throughput of all Hadoop related flows over time.}
 \label{fig:tput}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[width=0.7\textwidth]{figures/flow_durations.pdf}
+\includegraphics[width=0.2\textwidth]{figures/categories.pdf}
+\caption{Color/Category Table associated with Figure~\ref{fig:tput}}
+\label{fig:cats}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.55\textwidth]{figures/flow_durations.pdf}
 \caption{Duration of NameNode related flows.}
 \label{fig:duration_cdf}
 \end{figure}
