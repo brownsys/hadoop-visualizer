@@ -7,8 +7,8 @@ characterize the impact of Hadoop on a datacenter network, and the
 influence of the network - its topology, protocols, and scheduling - has on the 
 end-to-end application behavior. We believe this work is a good first step 
 towards a better understanding of the complexity of DISC framework's interaction
-with the network. In this section we discuss the components of our intial tracing
-infrastructure, Section~\ref{ssec:app} disscusses application-level tracing, 
+with the network. In this section we discuss the components of our initial tracing
+infrastructure, Section~\ref{ssec:app} discusses application-level tracing, 
 Section~\ref{ssec:low} discusses low-level tracing and lastly, 
 Section~\ref{ssec:results} discussing some initial results that use our high/low-level
 tracing mechanisms.
@@ -33,7 +33,7 @@ additional text that is displayed when a mouse is hovered over an event box. The
 information that is displayed for the {\em SocketIOWithTimeout.connect()} event includes
 the 5-tuple of the socket and a related stacktrace of events that triggered it. In addition
 to the event context information an event graph is produced for each job that is submitted,
-this way you can easily identify which TCP flow is associated with 
+this way the user can easily identify which TCP flow is associated with a given Hadoop job.
 
 \begin{figure}
 \centering
@@ -44,7 +44,26 @@ this way you can easily identify which TCP flow is associated with
 
 \subsection{Lower-level Tracing}
 \label{ssec:low}
-Tcpdump level tracing
+In order to capture low-level information about all TCP flows created by Hadoop 
+we use the popular packet-header capturing mechanism \emph{tcpdump}~\cite{tcpdump}.
+Upon executing a job in a cluster of machines we initiate tcpdump to capture the 
+first 120 bytes of each packet, which for our purposes encompasses the entirety of 
+the header of a TCP packet. 
+
+By capturing packet-header data we are then able to use tools like tstat~\cite{tstat}
+and tcptrace~\cite{tcptrace} on the resulting tcpdump data. These tools allow us to 
+easily retrieve statistics about the flows seen throughout the cluster such as 
+average RTT values, flow duration, timeouts, fast re-transmissions, etc. 
+
+Since X-Trace gives us a mechanism to expose the 5-tuple for each flow created by 
+Hadoop and tcpdump also exposes a 5-tuple for each packet we can easily correlate
+the application events that create sockets to the tcpdump captured packets by 
+pairing up 5-tuples. In our implementation after completing a set of jobs we 
+shutdown tcpdump, collect all the resulting tcpdump data, Hadoop logs, etc. and 
+post-process the data to create a general json structure. This json structure maps
+a flow ID (essentially the 5-tuple) to various application and low-level details. 
+This json structure is later used in Section~\ref{sec:viz} to aid in visualizing the 
+progression of events in the cluster.
 
 \subsection{Tracing Results}
 \label{ssec:results}
