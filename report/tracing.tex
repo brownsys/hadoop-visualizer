@@ -69,23 +69,43 @@ progression of events in the cluster.
 
 \subsection{Tracing Results}
 \label{ssec:results}
-Non-dynamic results from tracing, e.g. tput graphs, sdn tests, etc.
+%Non-dynamic results from tracing, e.g. tput graphs, sdn tests, etc.
+%Figure~\ref{fig:avg_rtt_cdf}
+Through the use of Hadoop capacity scheduler we are able to run multiple job's 
+simultaneously. The following experiments used two unique sets of 15GB of 
+random data generated through Hadoop's random writer job. The experiments themselves
+consisted of two simultaneous sort jobs on each newly generated data-set. Figure~\ref{fig:tput} 
+shows all TCP flows created during the execution of the two sort jobs. Each line (or dot in 
+many cases) represents the lifetime of a flow and its average throughput. Average throughput 
+of a given flow is a function of total bytes transferred and the flow's total duration time.
+This represents a basic indicator of the flow's throughput but does not take into account 
+when the actual bytes where transferred, which means that traffic that is bursty is not
+represented.
 
+In addition to low-level TCP flow throughput information Figure~\ref{fig:tput} also shows 
+application-level information regarding what type of service the flow is associated with. 
+Hadoop has several services and stages during its execution, which are decoded in the 
+color-category table shown in Figure~\ref{fig:cats}. 
+
+Figure~\ref{fig:duration_cdf}
+
+\begin{comment}
 \begin{figure}
 \centering
 \begin{minipage}{.5\textwidth}
   \centering
-  \includegraphics[width=.9\linewidth]{figures/flow_durations.pdf}
-  \captionof{figure}{Duration of NameNode related flows.}
-  \label{fig:duration_cdf}
+  \includegraphics[width=.9\linewidth]{figures/clock_v_throughput_port.pdf}}
+  \captionof{figure}{Average throughput of all Hadoop related flows over time.}
+  \label{fig:tput}
 \end{minipage}%
 \begin{minipage}{.5\textwidth}
   \centering
-  \includegraphics[width=.9\linewidth]{figures/avg_rtts_NN_flows.pdf}
+  \includegraphics[width=.9\linewidth]{figures/categories.pdf}
   \captionof{figure}{Average RTTs for NameNode related flows.}
-  \label{fig:test2}
+  \label{fig:foo}
 \end{minipage}
 \end{figure}
+\end{comment}
 
 \begin{figure}
 \centering
@@ -93,3 +113,11 @@ Non-dynamic results from tracing, e.g. tput graphs, sdn tests, etc.
 \caption{Average throughput of all Hadoop related flows over time.}
 \label{fig:tput}
 \end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/flow_durations.pdf}
+\caption{Duration of NameNode related flows.}
+\label{fig:duration_cdf}
+\end{figure}
+
