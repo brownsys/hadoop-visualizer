@@ -1,7 +1,7 @@
 var flow_map = [];
 var SVG = null;
 var play_timer = 0;
-var svgSize = {cx : 650, cy : 675, x : 1000, y: 675};
+var svgSize = {cx : 700, cy : 675, x : 1000, y: 900};
 var play_ts = {"min": 0};
 var play_servers = null;
 var play_weight = {"min": Infinity, "max": -1};
@@ -729,26 +729,28 @@ function drawFilters(){
 
 function initSwim() {
 
-    var swim_height = 450;
+    var swim_height = 200;
     var swim_box = SVG.append("svg:rect")
             .attr("class", "swim_box")
-            .attr("x", function(){return svgSize.cx;})
+            .attr("x", function(){return 0;})
             .attr("y", function(){return svgSize.y - swim_height;})
             .attr("height", function(){ return swim_height;})
-            .attr("width", function(){return svgSize.x - svgSize.cx;})
+            .attr("width", function(){return svgSize.cx;})
             .attr("opacity", function(){return .25;})
             .attr("fill", "gray");
 
+/*
     var swim_text = SVG.append("svg:text")
             .attr("class", "swim_title")
             .attr("x", function(){return svgSize.cx;})
             .attr("y", function(){return svgSize.y - swim_height - 3;})
             .text("Swim Diagram")
             .attr("fill", "black");
+*/
 
     var midline = SVG.append("svg:rect")
             .attr("class", "cur_swim_line")
-            .attr("x", function(){return svgSize.cx + ((svgSize.x -svgSize.cx)/2)-5;})
+            .attr("x", function(){return svgSize.cx/2-5;})
             .attr("y", function(){return svgSize.y - swim_height;})
             .attr("height", function(){ return swim_height;})
             .attr("width", function(){return 10;})
@@ -809,7 +811,7 @@ function drawSwimData(value, ts) {
     var box_width = parseInt(container.getAttribute("width"));
 
     var time_diff = ts["max"] - ts["min"];
-    var percent = .02;
+    var percent = .08;
     var time_width = box_width/(time_diff*percent);
 
     var bucket_num = 27;
