@@ -2,8 +2,8 @@
 \label{sec:viz}
 Our goal in creating the visualization was to make it easy to use and
 easy to understand. We made sure to provide all of the information
-that one trying to reason about a hadoop job would need to make
-imformed deductions about the network activity. In this section we
+that one trying to reason about a Hadoop job would need to make
+informed deductions about the network activity. In this section we
 will cover the technology used, section \ref{ssec:tech}, and the components of the
 visualization, section \ref{ssec:comp}.
 
@@ -23,7 +23,7 @@ use D3. For file reading, as well as the slide bar, we use
 jQuery~\cite{jQuery}. jQuery is a javascript library that provides
 easy manipulation of DOM(Document Object Model) elements as well as
 some components common to web applications. It makes programming time
-consuming elements much easier, and is highly recomended.
+consuming elements much easier, and is highly recommended.
 
 Our visualization includes tooltips for gathering more information
 about the flows while it is playing. For this we decided to use a
@@ -43,15 +43,15 @@ it's specific name in the cluster. Each node also has an associated
 pairing of bars directly out from it in respect to the center of the
 server circle. These bars display the capacity of the network
 link that it is currently being used. The bar on the left represents
-the incoming capacity useage, and the other represents the outgoing
+the incoming capacity usage, and the other represents the outgoing
 capacity. For example, if the server was sending as much as it could,
 then the bar would be completely green(the color of the outgoing
 capacity). With our current data, this rarely ever happens, because we
-currently don't stress the network with our hadoop job. This should be
+currently don't stress the network with our Hadoop job. This should be
 useful in the future to immediately see which nodes have hit a
 congestion point, and possibly find a fix.
 
-Another aspect, and the initial motivation for the visualzation, is the
+Another aspect, and the initial motivation for the visualization, is the
 displaying of flows between the network nodes. For each flow between
 nodes, we display a path from the source node to the destination node.
 All of the paths are currently set to be slightly transparent in an
@@ -59,34 +59,34 @@ effort to see paths that overlap. There is a problem when there are
 two flows between the same source and destination nodes because there
 is no way to see the bottom path. In later releases of the visualizer,
 we would like to recognize when this case occurs, and draw the paths
-paralell to eachother.
+parallel to each-other.
 
-These flows are also colored by their respective catagory. We
-currently catagorize NameNode flows, resource manager flows, node
+These flows are also colored by their respective category. We
+currently categorize NameNode flows, resource manager flows, node
 manager flows, and data stream flows. At times, there can be lots
 of flows between the servers, and it is hard to understand exactly
 what is going on. For situations like these, we added a filtering
 feature that allows you to remove all flows of a certain type from the
 graph, and leave the rest. Every flow also has a thickness based on
-the average bytes transfered per milisecond, larger averages are wider
+the average bytes transferred per millisecond, larger averages are wider
 than smaller averages within a certain range.
 
 Each flow also has a tooltip associated with it. At any time you can
 mouse over a flow to see things like it's job id, it's thread, it's
 source and destination IP's and ports, it's amount of bytes
-transfered, and information about it's RTT and elapsed time. This
+transferred, and information about it's RTT and elapsed time. This
 feature becomes very useful in identifying and reasoning about a
 curious flow.
 
 There are two components associated with moving through the
 visualization. The first is the slide bar. The slide bar allows the
-user to move to any moment in the hadoop job. As the bar is dragged,
+user to move to any moment in the Hadoop job. As the bar is dragged,
 the visualization will progress, and new flows will be added and
 removed as the flows are created and destroyed. The second is the play
 button. The play button will move through the simulation at a set
 speed until it is stopped. There is also an associated slider that
 allows the user to increase the speed of the simulation. This ranges
-from realtime to displaying 100ms of job time per 1ms of the
+from real-time to displaying 100ms of job time per 1ms of the
 simulation.
 
 The final component of the visualization is the swim graph. The swim
@@ -103,9 +103,9 @@ This is the currently implemented functionality, but we would like to
 extend it in the future. One extension we would like to add is a more
 flexible method for the format of inputted json data. Another
 extension, as mentioned previously, is to draw overlapping paths
-between nodes paralell to eachother. Ideally, in the future this will
-be a useful tool for anyone trying to analyze what is happining during
-a hadoop job running on their cluster.
+between nodes parallel to each-other. Ideally, in the future this will
+be a useful tool for anyone trying to analyze what is happening during
+a Hadoop job running on their cluster.
 
 \begin{figure}
 \centering

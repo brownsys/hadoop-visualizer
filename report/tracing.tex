@@ -10,15 +10,15 @@ towards a better understanding of the complexity of DISC framework's interaction
 with the network. In this section we discuss the components of our initial tracing
 infrastructure, Section~\ref{ssec:app} discusses application-level tracing, 
 Section~\ref{ssec:low} discusses low-level tracing and lastly, 
-Section~\ref{ssec:results} discussing some initial results that use our high/low-level
+Section~\ref{ssec:results} discusses some initial results that use our high/low-level
 tracing mechanisms.
 
 \subsection{Application-level Tracing}
 \label{ssec:app}
 Through the use of X-Trace~\cite{xtrace} we are able to expose causally related 
 application-level events of a Hadoop job's execution. Each event that X-Trace
-exposes provides us additional context about what other events came before it and
-caused it to occur and similarly what events came after it. By creating X-Trace 
+logs provides us additional context about what other events are causally related
+to it before and after it in time. By creating X-Trace 
 events for each TCP socket connect call we are able to discover the event history
 for every TCP socket that is created throughout the lifetime of a job's execution.
 
@@ -29,13 +29,14 @@ the 5-tuple related to it (i.e. source IP/port, destination IP/port, and protoco
 Figure~\ref{fig:xtrace} is an example graphic that shows causally related events that
 led to a TCP socket being created. Each event box contains a unique 16 character 
 identifier and a short description of the event. The black box to the left of the 
-figure represents additional information related to the event it points to. This includes 
-a subset of information available for each event, such as if the event relates to a socket
+figure represents additional information related to the event it points to. The box only 
+includes a subset of information available for each event, such as if the event relates to a socket
 connect call it displays the source IP/port and destination IP/port. Not displayed for space
 reasons in the black text box is the stacktrace of function calls that led to this event. In 
 addition to the event context information an event graph is produced for each job that is 
 submitted, this way the user can easily identify which TCP flow is associated with a given 
-Hadoop job.
+Hadoop job. The 5-tuple information that is logged with a socket connect event is the 
+primary identifying key used later to correlate the low/high level traces.
 
 \begin{figure}
 \centering
@@ -55,7 +56,10 @@ the header of a TCP packet.
 By capturing packet-header data we are then able to use tools like tstat~\cite{tstat}
 and tcptrace~\cite{tcptrace} on the resulting tcpdump data. These tools allow us to 
 easily retrieve statistics about the flows seen throughout the cluster such as 
-average RTT values, flow duration, timeouts, fast re-transmissions, etc. 
+average RTT values, flow duration, timeouts, fast re-transmissions, etc. These tools
+will primarily be useful to help diagnose flows that are later found to be bottleneck
+flows. However, these tools are also useful to gain additional insight into general 
+statistics about categories of flows, which is done in Section~\ref{ssec:results}
 
 Since X-Trace gives us a mechanism to expose the 5-tuple for each flow created by 
 Hadoop and tcpdump also exposes a 5-tuple for each packet we can easily correlate
@@ -69,14 +73,12 @@ progression of events in the cluster.
 
 \subsection{Tracing Results}
 \label{ssec:results}
-%Non-dynamic results from tracing, e.g. tput graphs, sdn tests, etc.
-%Figure~\ref{fig:avg_rtt_cdf}
-Through the use of Hadoop capacity scheduler we are able to run multiple job's 
-simultaneously. The following experiments used two unique sets of 15GB of 
-random data generated through Hadoop's random writer job. The experiments themselves
+Through the use of Hadoop's capacity scheduler we are able to run multiple jobs 
+simultaneously. The following experiments used two unique sets of random data generated through 
+Hadoop's random writer job (15GB each). The experiments themselves
 consisted of two simultaneous sort jobs on each newly generated data-set. Figure~\ref{fig:tput} 
-shows all TCP flows created during the execution of the two sort jobs. Each line (or dot in 
-many cases) represents the lifetime of a flow and its average throughput. Average throughput 
+shows all TCP flows created during the execution of the two sort jobs. Each line (or single dot
+for short flows) represents the lifetime of a flow and its average throughput. Average throughput 
 of a given flow is a function of total bytes transferred and the flow's total duration time.
 This represents a basic indicator of the flow's throughput but does not take into account 
 when the actual bytes where transferred, which means that traffic that is bursty is not
@@ -92,25 +94,24 @@ flows are related to NameNode traffic.
 Prior work with the SDN controller PANE~\cite{PANE} saw success by giving higher 
 priority to Shuffle traffic related flows. Through the use of an OpenFlow enabled switch 
 connected to our cluster machines we were able to setup reservations for lower throughput 
-NameNode related RPC call related flows. These reservations were accomplished through 
+NameNode related RPC call flows. These reservations were accomplished through 
 the use of the same PANE controller discussed in~\cite{PANE}. By issuing reservations 
 for NameNode traffic we were able to setup higher priority queues that guaranteed 
-bandwidth of 10Mbps 
-for all NameNode related RPC calls. Our hypothesis was that by providing 
+bandwidth of 10Mbps for all NameNode related RPC calls. Our hypothesis was that by providing 
 guaranteed minimum bandwidth for control message flows we would lower their
 latency and potentially speed up a job's execution. Figure~\ref{fig:duration_cdf}
 shows a CDF of the duration of all NameNode related flows between two different
 executions of the same jobs, with and with-out these reservations. It should be
 noted that the x-axis is in milliseconds but with a factor of $10^4$. Flows whose
-total duration less than 10 seconds saw the most improvement. Averaged over three
+total duration was less than 10 seconds saw the most improvement. Averaged over three
 different runs with and with-out reservations the average decrease in job 
 completion time with NameNode reservations was a little over 51 seconds, which is
-roughly a 3.5\% improvement. During the execution of these jobs we also measured
-the port utilization on the switch and found that the 1Gbps ports were not 
-significantly utilized over the lifetime of the jobs. Our new hypothesis, which is
-left for future work, is that if we increase the number of simultaneous jobs or 
-add non-Hadoop traffic to the network that the use of NameNode reservations will 
-show a more significant improvement. 
+roughly a 3.5\% improvement compared to no reservations. During the execution of 
+these jobs we also measured the port utilization on the switch and found that 
+the 1Gbps full-duplex ports were not significantly utilized over the lifetime 
+of the jobs. Our new hypothesis, which is left for future work, is that if we increase 
+the number of simultaneous jobs or add non-Hadoop traffic to the network that the use 
+of NameNode reservations will show a more significant improvement. 
 
 \begin{comment}
 \begin{figure}
@@ -147,7 +148,7 @@ show a more significant improvement.
 \begin{figure}
 \centering
 \includegraphics[width=0.55\textwidth]{figures/flow_durations.pdf}
-\caption{Duration of NameNode related flows, (note: x-axis is $10^4$ ms)}
+\caption{Duration of NameNode related flows, {\footnotesize (note: x-axis is $10^4$ ms)}}
 \label{fig:duration_cdf}
 \end{figure}
 
