@@ -5,3 +5,7 @@ There has been some recent work by Weitzel on visualizing Hadoop related events 
 more dynamic ways. Particularly there has been two visualizations~\cite{HadoopViz1, HadoopViz2} that
 have aimed to visualize data transfers of a Hadoop execution. This work however only looks at HDFS 
 block related traffic and does not take into account job-specific or application-level details. 
+In addition, these visualizations do not account for general network traffic only the transfer
+of HDFS blocks. For future work we would like to look at correlating TCP flows to specific HDFS block
+transfers and especially correlating HDFS blocks to specific application-level behavior (e.g. is the 
+block being read/write, is it mapper or reducer related, etc.).
