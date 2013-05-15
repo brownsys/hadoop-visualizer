@@ -5,7 +5,8 @@ easy to understand. We made sure to provide all of the information
 that one trying to reason about a hadoop job would need to make
 imformed deductions about the network activity. In this section we
 will cover the technology used, section \ref{ssec:tech}, and the components of the
-visualization, section \ref{ssec:comp}.
+visualization, section \ref{ssec:comp}. The visualization can be
+tested at \url{http://cs.brown.edu/~jeffra/hadoop-visualizer/index.html}.
 
 \subsection{Technologies}
 \label{ssec:tech}
@@ -35,7 +36,8 @@ highly recommended.
 \subsection{Components}
 \label{ssec:comp}
 There are a couple of main components of the visualization. The first
-is the server layout. The server layout is dynamic to any number of
+is the server layout which are the blue circles displayed in Figure
+5. The server layout is dynamic to any number of
 nodes, and will adjust appropriately to the number of servers in the
 cluster. Each circle in the ring represents a machine that
 participates in the job being visualized. Each node is labeled with
@@ -52,7 +54,8 @@ useful in the future to immediately see which nodes have hit a
 congestion point, and possibly find a fix.
 
 Another aspect, and the initial motivation for the visualzation, is the
-displaying of flows between the network nodes. For each flow between
+displaying of flows between the network nodes. These are the paths
+displayed between the server nodes in Figure 5. For each flow between
 nodes, we display a path from the source node to the destination node.
 All of the paths are currently set to be slightly transparent in an
 effort to see paths that overlap. There is a problem when there are
